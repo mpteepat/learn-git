@@ -1,0 +1,1560 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Self-Delivery Robot — Deep Analysis</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+         :root {
+            --bg: #0d0f14;
+            --surface: #14171f;
+            --card: #1a1e2a;
+            --border: #2a2f3d;
+            --accent: #3b82f6;
+            --accent2: #8b5cf6;
+            --accent3: #10b981;
+            --accent4: #f59e0b;
+            --accent5: #ef4444;
+            --text: #e2e8f0;
+            --muted: #7c8599;
+            --tag-bg: #1e2535;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+            min-height: 100vh;
+        }
+        /* Hero */
+        
+        .hero {
+            padding: 72px 48px 60px;
+            border-bottom: 1px solid var(--border);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .hero::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse 900px 500px at 60% -20%, rgba(59, 130, 246, 0.08) 0%, transparent 70%), radial-gradient(ellipse 600px 400px at 0% 100%, rgba(139, 92, 246, 0.06) 0%, transparent 60%);
+        }
+        
+        .hero-label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            letter-spacing: 0.15em;
+            color: var(--accent);
+            text-transform: uppercase;
+            margin-bottom: 20px;
+        }
+        
+        .hero h1 {
+            font-size: clamp(32px, 5vw, 56px);
+            font-weight: 700;
+            line-height: 1.1;
+            letter-spacing: -0.03em;
+            margin-bottom: 20px;
+        }
+        
+        .hero h1 span {
+            color: var(--accent);
+        }
+        
+        .hero p {
+            font-size: 17px;
+            color: var(--muted);
+            max-width: 640px;
+            margin-bottom: 28px;
+        }
+        
+        .hero-meta {
+            display: flex;
+            gap: 24px;
+            flex-wrap: wrap;
+        }
+        
+        .meta-pill {
+            background: var(--tag-bg);
+            border: 1px solid var(--border);
+            padding: 6px 14px;
+            border-radius: 999px;
+            font-size: 13px;
+            color: var(--muted);
+        }
+        
+        .meta-pill strong {
+            color: var(--text);
+        }
+        /* Nav */
+        
+        .nav {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(13, 15, 20, 0.92);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+            padding: 0 48px;
+            display: flex;
+            gap: 0;
+            overflow-x: auto;
+        }
+        
+        .nav-btn {
+            padding: 14px 18px;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--muted);
+            background: none;
+            border: none;
+            border-bottom: 2px solid transparent;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: color 0.2s, border-color 0.2s;
+        }
+        
+        .nav-btn:hover {
+            color: var(--text);
+        }
+        
+        .nav-btn.active {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
+        }
+        /* Sections */
+        
+        .section {
+            display: none;
+            padding: 48px;
+            max-width: 1100px;
+        }
+        
+        .section.active {
+            display: block;
+        }
+        /* Section headers */
+        
+        .section-label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            letter-spacing: 0.15em;
+            color: var(--accent);
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+        
+        .section-title {
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            margin-bottom: 8px;
+        }
+        
+        .section-desc {
+            color: var(--muted);
+            font-size: 15px;
+            margin-bottom: 40px;
+            max-width: 640px;
+        }
+        /* Cards */
+        
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 24px;
+            margin-bottom: 16px;
+        }
+        
+        .card-title {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .card-body {
+            font-size: 14px;
+            color: var(--muted);
+            line-height: 1.8;
+        }
+        
+        .card-body p {
+            margin-bottom: 8px;
+        }
+        
+        .card-body p:last-child {
+            margin-bottom: 0;
+        }
+        /* Icon badge */
+        
+        .icon-badge {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+        /* Grid */
+        
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+        
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+        }
+        
+        @media (max-width: 800px) {
+            .grid-2,
+            .grid-3 {
+                grid-template-columns: 1fr;
+            }
+            .hero,
+            .nav,
+            .section {
+                padding-left: 24px;
+                padding-right: 24px;
+            }
+        }
+        /* Stat cards */
+        
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 32px;
+        }
+        
+        @media (max-width: 900px) {
+            .stat-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
+        .stat-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: var(--muted);
+            margin-bottom: 8px;
+            font-family: 'JetBrains Mono', monospace;
+            letter-spacing: 0.05em;
+        }
+        
+        .stat-value {
+            font-size: 26px;
+            font-weight: 700;
+            letter-spacing: -0.03em;
+        }
+        
+        .stat-unit {
+            font-size: 13px;
+            color: var(--muted);
+            margin-top: 2px;
+        }
+        /* Pros/Cons */
+        
+        .pro-con-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        @media (max-width: 750px) {
+            .pro-con-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .pro-box,
+        .con-box {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 24px;
+        }
+        
+        .pro-box {
+            border-top: 3px solid var(--accent3);
+        }
+        
+        .con-box {
+            border-top: 3px solid var(--accent5);
+        }
+        
+        .box-header {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .item {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 12px;
+            font-size: 13.5px;
+            color: var(--muted);
+            line-height: 1.6;
+        }
+        
+        .item:last-child {
+            margin-bottom: 0;
+        }
+        
+        .item-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            margin-top: 7px;
+        }
+        
+        .pro-dot {
+            background: var(--accent3);
+        }
+        
+        .con-dot {
+            background: var(--accent5);
+        }
+        /* Architecture diagram */
+        
+        .arch-container {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 32px;
+            overflow-x: auto;
+        }
+        /* Tech stack table */
+        
+        .tech-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .tech-table th {
+            font-size: 11px;
+            font-family: 'JetBrains Mono', monospace;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--muted);
+            text-align: left;
+            padding: 10px 16px;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .tech-table td {
+            padding: 12px 16px;
+            font-size: 13.5px;
+            border-bottom: 1px solid rgba(42, 47, 61, 0.5);
+            vertical-align: top;
+        }
+        
+        .tech-table tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .tech-table tr:hover td {
+            background: rgba(255, 255, 255, 0.02);
+        }
+        
+        .tag {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-family: 'JetBrains Mono', monospace;
+            margin-right: 4px;
+        }
+        
+        .tag-hw {
+            background: rgba(59, 130, 246, 0.15);
+            color: #60a5fa;
+        }
+        
+        .tag-sw {
+            background: rgba(139, 92, 246, 0.15);
+            color: #a78bfa;
+        }
+        
+        .tag-algo {
+            background: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+        }
+        
+        .tag-limit {
+            background: rgba(239, 68, 68, 0.15);
+            color: #f87171;
+        }
+        
+        .tag-ok {
+            background: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+        }
+        /* Results table */
+        
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .results-table th {
+            font-size: 11px;
+            font-family: 'JetBrains Mono', monospace;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--muted);
+            text-align: left;
+            padding: 10px 16px;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .results-table td {
+            padding: 11px 16px;
+            font-size: 13px;
+            border-bottom: 1px solid rgba(42, 47, 61, 0.5);
+        }
+        /* Improvement cards */
+        
+        .improve-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 24px;
+            margin-bottom: 16px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .improve-card::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+        }
+        
+        .improve-card.high::before {
+            background: var(--accent5);
+        }
+        
+        .improve-card.med::before {
+            background: var(--accent4);
+        }
+        
+        .improve-card.low::before {
+            background: var(--accent3);
+        }
+        
+        .improve-title {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .priority-badge {
+            font-size: 11px;
+            font-family: 'JetBrains Mono', monospace;
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+        
+        .high-badge {
+            background: rgba(239, 68, 68, 0.15);
+            color: #f87171;
+        }
+        
+        .med-badge {
+            background: rgba(245, 158, 11, 0.15);
+            color: #fbbf24;
+        }
+        
+        .low-badge {
+            background: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+        }
+        
+        .improve-body {
+            font-size: 13.5px;
+            color: var(--muted);
+            line-height: 1.8;
+        }
+        /* Summary / lecture */
+        
+        .lecture-block {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 28px 32px;
+            margin-bottom: 20px;
+        }
+        
+        .lecture-num {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: var(--accent);
+            letter-spacing: 0.1em;
+            margin-bottom: 8px;
+        }
+        
+        .lecture-heading {
+            font-size: 17px;
+            font-weight: 600;
+            margin-bottom: 14px;
+            letter-spacing: -0.01em;
+        }
+        
+        .lecture-body {
+            font-size: 14px;
+            color: var(--muted);
+            line-height: 1.9;
+        }
+        
+        .lecture-body strong {
+            color: var(--text);
+            font-weight: 500;
+        }
+        
+        .code-inline {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            background: rgba(59, 130, 246, 0.12);
+            color: #60a5fa;
+            padding: 1px 6px;
+            border-radius: 4px;
+        }
+        /* Highlight bar */
+        
+        .highlight {
+            background: rgba(59, 130, 246, 0.07);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            border-radius: 10px;
+            padding: 16px 20px;
+            margin: 16px 0;
+            font-size: 13.5px;
+            color: var(--text);
+            line-height: 1.7;
+        }
+        /* SVG arch */
+        
+        .svg-wrap {
+            overflow-x: auto;
+        }
+        /* Separator */
+        
+        .sep {
+            border: none;
+            border-top: 1px solid var(--border);
+            margin: 32px 0;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="hero">
+        <div class="hero-label">KMUTT · Control Systems Engineering · Academic Year 2023</div>
+        <h1>Self-Delivery <span>Robot</span><br>Deep Knowledge Analysis</h1>
+        <p>A comprehensive breakdown of the autonomous delivery robot project — architecture, algorithms, experimental results, pros &amp; cons, improvement strategies, and full knowledge summary.</p>
+        <div class="hero-meta">
+            <div class="meta-pill"><strong>Authors:</strong> Chaipat Kaewwanna &amp; Thanakrit Jadthong</div>
+            <div class="meta-pill"><strong>Budget:</strong> ฿128,115</div>
+            <div class="meta-pill"><strong>Platform:</strong> Nvidia Jetson Orin NX + Arduino</div>
+            <div class="meta-pill"><strong>ROS Noetic + YOLOv5 + Hector SLAM</strong></div>
+        </div>
+    </div>
+
+    <nav class="nav">
+        <button class="nav-btn active" onclick="show('overview')">Overview</button>
+        <button class="nav-btn" onclick="show('architecture')">Architecture</button>
+        <button class="nav-btn" onclick="show('results')">Results</button>
+        <button class="nav-btn" onclick="show('proscons')">Pros &amp; Cons</button>
+        <button class="nav-btn" onclick="show('improvements')">Better Way</button>
+        <button class="nav-btn" onclick="show('summary')">Full Lecture</button>
+    </nav>
+
+    <!-- OVERVIEW -->
+    <section id="overview" class="section active">
+        <div class="section-label">01 · Project Overview</div>
+        <div class="section-title">What This Robot Does</div>
+        <div class="section-desc">An autonomous indoor/outdoor delivery robot that navigates via SLAM, avoids obstacles with LiDAR + YOLO, and interacts with humans via face recognition and voice greeting.</div>
+
+        <div class="stat-grid">
+            <div class="stat-card">
+                <div class="stat-label">ENCODER ACCURACY</div>
+                <div class="stat-value" style="color:var(--accent3);">&lt;2%</div>
+                <div class="stat-unit">distance error over 271 cm</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">FACE RECOGNITION RANGE</div>
+                <div class="stat-value" style="color:var(--accent);">≤6 m</div>
+                <div class="stat-unit">reliable ID range</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">CUDA FPS BOOST</div>
+                <div class="stat-value" style="color:var(--accent2);">~3×</div>
+                <div class="stat-unit">GPU vs CPU-only processing</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">STOP SAFETY ZONE</div>
+                <div class="stat-value" style="color:var(--accent4);">3 m</div>
+                <div class="stat-unit">linear stop distance from humans</div>
+            </div>
+        </div>
+
+        <div class="grid-2">
+            <div class="card">
+                <div class="card-title">
+                    <div class="icon-badge" style="background:rgba(59,130,246,0.15);">🎯</div>Core Objectives</div>
+                <div class="card-body">
+                    <p>1. Autonomous movement using ROS (Robot Operating System) with SLAM-based mapping.</p>
+                    <p>2. Human interaction: recognize individuals from a face database, greet by name via speaker using Google Text-to-Speech (gTTS).</p>
+                    <p>3. Obstacle avoidance using LiDAR sensor (RPLiDAR S2E) and YOLO-based depth camera detection.</p>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-title">
+                    <div class="icon-badge" style="background:rgba(139,92,246,0.15);">⚙️</div>Operating Modes</div>
+                <div class="card-body">
+                    <p><strong>Manual Mode (RC):</strong> FS-i6 2.4 GHz remote controller drives the robot via PWM signals to Arduino. Useful for testing and emergency override.</p>
+                    <p><strong>Autonomous Mode:</strong> ROS Navigation Stack handles path planning, Hector SLAM provides the map, move_base coordinates global + local planners to reach coordinate-specified goals.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">
+                <div class="icon-badge" style="background:rgba(16,185,129,0.15);">🔧</div>Complete Hardware Bill of Materials</div>
+            <div class="card-body">
+                <table class="tech-table" style="margin-top:8px;">
+                    <thead>
+                        <tr>
+                            <th>Component</th>
+                            <th>Purpose</th>
+                            <th>Cost (THB)</th>
+                            <th>Type</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>NVIDIA Jetson Orin NX 16GB (reComputer J4012)</td>
+                            <td>Main compute — runs ROS, YOLO, SLAM</td>
+                            <td>38,500</td>
+                            <td><span class="tag tag-hw">HW</span></td>
+                        </tr>
+                        <tr>
+                            <td>RPLiDAR S2E (Slamtech)</td>
+                            <td>360° LiDAR scanning for SLAM &amp; obstacle detection (0.05–30m)</td>
+                            <td>28,900</td>
+                            <td><span class="tag tag-hw">HW</span></td>
+                        </tr>
+                        <tr>
+                            <td>Intel RealSense D435i</td>
+                            <td>Depth camera for YOLO object detection &amp; distance measurement</td>
+                            <td>17,950</td>
+                            <td><span class="tag tag-hw">HW</span></td>
+                        </tr>
+                        <tr>
+                            <td>LiFePO4 Battery 24V 12Ah with BMS</td>
+                            <td>Main power supply (stable discharge, 25A continuous)</td>
+                            <td>3,500</td>
+                            <td><span class="tag tag-hw">HW</span></td>
+                        </tr>
+                        <tr>
+                            <td>Motor Gear 24V 350W (×2)</td>
+                            <td>Differential drive rear wheels</td>
+                            <td>3,600</td>
+                            <td><span class="tag tag-hw">HW</span></td>
+                        </tr>
+                        <tr>
+                            <td>BTS7960 H-Bridge Motor Driver (×2)</td>
+                            <td>Motor current control via PWM</td>
+                            <td>420</td>
+                            <td><span class="tag tag-hw">HW</span></td>
+                        </tr>
+                        <tr>
+                            <td>HN3806-AB-400N Rotary Encoder (×2)</td>
+                            <td>Wheel odometry (distance, speed)</td>
+                            <td>1,500</td>
+                            <td><span class="tag tag-hw">HW</span></td>
+                        </tr>
+                        <tr>
+                            <td>Arduino UNO R3</td>
+                            <td>Low-level motor control &amp; sensor I/O via rosserial</td>
+                            <td>980</td>
+                            <td><span class="tag tag-hw">HW</span></td>
+                        </tr>
+                        <tr>
+                            <td>XL4015 Step-Down 5A</td>
+                            <td>24V → 5V for Arduino, encoders, receiver</td>
+                            <td>45</td>
+                            <td><span class="tag tag-hw">HW</span></td>
+                        </tr>
+                        <tr>
+                            <td>QS-2405 Step-Down 8A</td>
+                            <td>24V → 12V for Jetson, LiDAR, display</td>
+                            <td>270</td>
+                            <td><span class="tag tag-hw">HW</span></td>
+                        </tr>
+                        <tr>
+                            <td>FS-i6 RC Remote + Receiver</td>
+                            <td>Manual mode + emergency wireless stop</td>
+                            <td>—</td>
+                            <td><span class="tag tag-hw">HW</span></td>
+                        </tr>
+                        <tr>
+                            <td>10.1" Capacitive HDMI Screen</td>
+                            <td>UI display</td>
+                            <td>4,500</td>
+                            <td><span class="tag tag-hw">HW</span></td>
+                        </tr>
+                        <tr>
+                            <td>Mechanical chassis + body</td>
+                            <td>Differential drive 4-wheel frame (58×68×57 cm)</td>
+                            <td>28,000</td>
+                            <td><span class="tag tag-hw">HW</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- ARCHITECTURE -->
+    <section id="architecture" class="section">
+        <div class="section-label">02 · System Architecture</div>
+        <div class="section-title">How Everything Connects</div>
+        <div class="section-desc">Two-layer architecture: high-level ROS on Jetson Orin NX for intelligence, low-level Arduino for real-time motor control.</div>
+
+        <div class="arch-container">
+            <svg width="100%" viewBox="0 0 900 560" style="min-width:700px; font-family:'Space Grotesk',sans-serif;">
+      <defs>
+        <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M2 1L8 5L2 9" fill="none" stroke="#3b82f6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </marker>
+        <marker id="arrs" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M2 1L8 5L2 9" fill="none" stroke="#7c8599" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </marker>
+      </defs>
+
+      <!-- SENSORS region -->
+      <rect x="20" y="20" width="180" height="520" rx="12" fill="rgba(16,185,129,0.06)" stroke="rgba(16,185,129,0.25)" stroke-width="1"/>
+      <text x="110" y="48" text-anchor="middle" font-size="11" fill="#34d399" font-family="JetBrains Mono, monospace" letter-spacing="0.1em">SENSORS</text>
+
+      <rect x="38" y="62" width="144" height="54" rx="8" fill="#1a2235" stroke="#2a2f3d" stroke-width="0.8"/>
+      <text x="110" y="83" text-anchor="middle" font-size="13" font-weight="500" fill="#e2e8f0">RPLiDAR S2E</text>
+      <text x="110" y="99" text-anchor="middle" font-size="11" fill="#7c8599">360° scan, 0.05–30m</text>
+      <text x="110" y="113" text-anchor="middle" font-size="11" fill="#7c8599">Ethernet UDP</text>
+
+      <rect x="38" y="130" width="144" height="54" rx="8" fill="#1a2235" stroke="#2a2f3d" stroke-width="0.8"/>
+      <text x="110" y="151" text-anchor="middle" font-size="13" font-weight="500" fill="#e2e8f0">RealSense D435i</text>
+      <text x="110" y="167" text-anchor="middle" font-size="11" fill="#7c8599">RGB + Depth camera</text>
+      <text x="110" y="181" text-anchor="middle" font-size="11" fill="#7c8599">USB</text>
+
+      <rect x="38" y="198" width="144" height="54" rx="8" fill="#1a2235" stroke="#2a2f3d" stroke-width="0.8"/>
+      <text x="110" y="219" text-anchor="middle" font-size="13" font-weight="500" fill="#e2e8f0">Rotary Encoder ×2</text>
+      <text x="110" y="235" text-anchor="middle" font-size="11" fill="#7c8599">400 PPR incremental</text>
+      <text x="110" y="249" text-anchor="middle" font-size="11" fill="#7c8599">GPIO → Arduino</text>
+
+      <rect x="38" y="266" width="144" height="42" rx="8" fill="#1a2235" stroke="#2a2f3d" stroke-width="0.8"/>
+      <text x="110" y="282" text-anchor="middle" font-size="13" font-weight="500" fill="#e2e8f0">FS-i6 Receiver</text>
+      <text x="110" y="298" text-anchor="middle" font-size="11" fill="#7c8599">RC 2.4 GHz → Arduino</text>
+
+      <!-- JETSON region -->
+      <rect x="230" y="20" width="440" height="520" rx="12" fill="rgba(59,130,246,0.05)" stroke="rgba(59,130,246,0.2)" stroke-width="1"/>
+      <text x="450" y="48" text-anchor="middle" font-size="11" fill="#60a5fa" font-family="JetBrains Mono, monospace" letter-spacing="0.1em">NVIDIA JETSON ORIN NX 16GB — ROS NOETIC</text>
+
+      <!-- ROS Nodes -->
+      <rect x="248" y="62" width="160" height="48" rx="8" fill="#1e2a3d" stroke="#3b82f6" stroke-width="0.8"/>
+      <text x="328" y="81" text-anchor="middle" font-size="12" font-weight="500" fill="#e2e8f0">Hector SLAM</text>
+      <text x="328" y="97" text-anchor="middle" font-size="11" fill="#60a5fa">/map topic</text>
+
+      <rect x="430" y="62" width="160" height="48" rx="8" fill="#1e2a3d" stroke="#3b82f6" stroke-width="0.8"/>
+      <text x="510" y="81" text-anchor="middle" font-size="12" font-weight="500" fill="#e2e8f0">Navigation Stack</text>
+      <text x="510" y="97" text-anchor="middle" font-size="11" fill="#60a5fa">move_base / AMCL</text>
+
+      <rect x="248" y="132" width="160" height="48" rx="8" fill="#221e3d" stroke="#8b5cf6" stroke-width="0.8"/>
+      <text x="328" y="151" text-anchor="middle" font-size="12" font-weight="500" fill="#e2e8f0">YOLOv5 Node</text>
+      <text x="328" y="167" text-anchor="middle" font-size="11" fill="#a78bfa">/object_type_topic</text>
+
+      <rect x="430" y="132" width="160" height="48" rx="8" fill="#221e3d" stroke="#8b5cf6" stroke-width="0.8"/>
+      <text x="510" y="151" text-anchor="middle" font-size="12" font-weight="500" fill="#e2e8f0">Face Recognition</text>
+      <text x="510" y="167" text-anchor="middle" font-size="11" fill="#a78bfa">/person_name topic</text>
+
+      <rect x="248" y="202" width="160" height="48" rx="8" fill="#1e2a2e" stroke="#10b981" stroke-width="0.8"/>
+      <text x="328" y="221" text-anchor="middle" font-size="12" font-weight="500" fill="#e2e8f0">Odometry Node</text>
+      <text x="328" y="237" text-anchor="middle" font-size="11" fill="#34d399">/odom topic</text>
+
+      <rect x="430" y="202" width="160" height="48" rx="8" fill="#1e2a2e" stroke="#10b981" stroke-width="0.8"/>
+      <text x="510" y="221" text-anchor="middle" font-size="12" font-weight="500" fill="#e2e8f0">modified_cmd_vel</text>
+      <text x="510" y="237" text-anchor="middle" font-size="11" fill="#34d399">Speed multiplier logic</text>
+
+      <rect x="248" y="272" width="160" height="48" rx="8" fill="#2a2215" stroke="#f59e0b" stroke-width="0.8"/>
+      <text x="328" y="291" text-anchor="middle" font-size="12" font-weight="500" fill="#e2e8f0">Human Interaction</text>
+      <text x="328" y="307" text-anchor="middle" font-size="11" fill="#fbbf24">gTTS → speaker</text>
+
+      <rect x="430" y="272" width="160" height="48" rx="8" fill="#2a2215" stroke="#f59e0b" stroke-width="0.8"/>
+      <text x="510" y="291" text-anchor="middle" font-size="12" font-weight="500" fill="#e2e8f0">Navigation Points</text>
+      <text x="510" y="307" text-anchor="middle" font-size="11" fill="#fbbf24">Keyboard shortcut goals</text>
+
+      <rect x="310" y="340" width="280" height="48" rx="8" fill="#1a1e2a" stroke="#2a2f3d" stroke-width="0.8"/>
+      <text x="450" y="359" text-anchor="middle" font-size="12" font-weight="500" fill="#e2e8f0">ROS Master (roscore)</text>
+      <text x="450" y="375" text-anchor="middle" font-size="11" fill="#7c8599">Publisher / Subscriber / Service bus</text>
+
+      <rect x="310" y="410" width="280" height="48" rx="8" fill="#201a2a" stroke="#8b5cf6" stroke-width="0.8"/>
+      <text x="450" y="429" text-anchor="middle" font-size="12" font-weight="500" fill="#e2e8f0">rosserial</text>
+      <text x="450" y="445" text-anchor="middle" font-size="11" fill="#a78bfa">USB Serial bridge → Arduino</text>
+
+      <rect x="310" y="480" width="280" height="42" rx="8" fill="#1a1e2a" stroke="#2a2f3d" stroke-width="0.8"/>
+      <text x="450" y="499" text-anchor="middle" font-size="12" font-weight="500" fill="#e2e8f0">OpenCV + CUDA</text>
+      <text x="450" y="515" text-anchor="middle" font-size="11" fill="#7c8599">GPU-accelerated image processing</text>
+
+      <!-- ARDUINO region -->
+      <rect x="700" y="20" width="180" height="260" rx="12" fill="rgba(245,158,11,0.06)" stroke="rgba(245,158,11,0.25)" stroke-width="1"/>
+      <text x="790" y="48" text-anchor="middle" font-size="11" fill="#fbbf24" font-family="JetBrains Mono, monospace" letter-spacing="0.08em">ARDUINO UNO</text>
+
+      <rect x="718" y="62" width="144" height="48" rx="8" fill="#1a2235" stroke="#2a2f3d" stroke-width="0.8"/>
+      <text x="790" y="81" text-anchor="middle" font-size="12" font-weight="500" fill="#e2e8f0">Mode Selector</text>
+      <text x="790" y="97" text-anchor="middle" font-size="11" fill="#7c8599">Manual / Auto toggle</text>
+
+      <rect x="718" y="130" width="144" height="48" rx="8" fill="#1a2235" stroke="#2a2f3d" stroke-width="0.8"/>
+      <text x="790" y="149" text-anchor="middle" font-size="12" font-weight="500" fill="#e2e8f0">Motor PWM Control</text>
+      <text x="790" y="165" text-anchor="middle" font-size="11" fill="#7c8599">BTS7960 L+R drivers</text>
+
+      <rect x="718" y="198" width="144" height="48" rx="8" fill="#1a2235" stroke="#2a2f3d" stroke-width="0.8"/>
+      <text x="790" y="217" text-anchor="middle" font-size="12" font-weight="500" fill="#e2e8f0">Encoder Reader</text>
+      <text x="790" y="233" text-anchor="middle" font-size="11" fill="#7c8599">Pulse counting → distance</text>
+
+      <!-- ACTUATORS region -->
+      <rect x="700" y="300" width="180" height="240" rx="12" fill="rgba(239,68,68,0.06)" stroke="rgba(239,68,68,0.2)" stroke-width="1"/>
+      <text x="790" y="328" text-anchor="middle" font-size="11" fill="#f87171" font-family="JetBrains Mono, monospace" letter-spacing="0.08em">ACTUATORS</text>
+
+      <rect x="718" y="342" width="144" height="42" rx="8" fill="#1a2235" stroke="#2a2f3d" stroke-width="0.8"/>
+      <text x="790" y="358" text-anchor="middle" font-size="12" font-weight="500" fill="#e2e8f0">Motor L (350W 24V)</text>
+      <text x="790" y="374" text-anchor="middle" font-size="11" fill="#7c8599">Chain drive → rear left</text>
+
+      <rect x="718" y="398" width="144" height="42" rx="8" fill="#1a2235" stroke="#2a2f3d" stroke-width="0.8"/>
+      <text x="790" y="414" text-anchor="middle" font-size="12" font-weight="500" fill="#e2e8f0">Motor R (350W 24V)</text>
+      <text x="790" y="430" text-anchor="middle" font-size="11" fill="#7c8599">Chain drive → rear right</text>
+
+      <rect x="718" y="454" width="144" height="42" rx="8" fill="#1a2235" stroke="#2a2f3d" stroke-width="0.8"/>
+      <text x="790" y="470" text-anchor="middle" font-size="12" font-weight="500" fill="#e2e8f0">Speaker + Buzzer</text>
+      <text x="790" y="486" text-anchor="middle" font-size="11" fill="#7c8599">gTTS audio output</text>
+
+      <!-- Arrows Sensors → Jetson -->
+      <line x1="182" y1="88" x2="246" y2="86" stroke="#3b82f6" stroke-width="1" marker-end="url(#arr)"/>
+      <line x1="182" y1="157" x2="246" y2="156" stroke="#8b5cf6" stroke-width="1" marker-end="url(#arr)"/>
+      <line x1="182" y1="225" x2="246" y2="226" stroke="#10b981" stroke-width="1" marker-end="url(#arr)"/>
+      <line x1="182" y1="287" x2="246" y2="291" stroke="#7c8599" stroke-width="0.8" marker-end="url(#arrs)"/>
+
+      <!-- Jetson → Arduino -->
+      <line x1="592" y1="430" x2="698" y2="175" stroke="#f59e0b" stroke-width="1" marker-end="url(#arr)" stroke-dasharray="4 3"/>
+
+      <!-- Arduino → Actuators -->
+      <line x1="790" y1="282" x2="790" y2="340" stroke="#f87171" stroke-width="1" marker-end="url(#arr)"/>
+
+      <!-- Internal ROS flow labels -->
+      <text x="390" y="200" text-anchor="middle" font-size="10" fill="#3b82f6" opacity="0.6">/cmd_vel</text>
+      <line x1="410" y1="206" x2="428" y2="217" stroke="#3b82f6" stroke-width="0.6" opacity="0.4"/>
+    </svg>
+        </div>
+
+        <hr class="sep">
+
+        <div class="section-label" style="margin-top:0">Software Algorithms Used</div>
+        <div class="grid-2" style="margin-top:16px">
+            <div class="card">
+                <div class="card-title">
+                    <div class="icon-badge" style="background:rgba(59,130,246,0.15);">🗺️</div>Hector SLAM</div>
+                <div class="card-body">
+                    <p>Simultaneous Localization and Mapping without requiring odometry — relies purely on LiDAR scan matching. Creates 2D occupancy grid maps. Works well indoors with clear wall boundaries. Fails outdoors in open, boundary-free spaces.</p>
+                    <p>Uses scan-to-map correlation (Gauss-Newton optimization). Map saved as PNG + YAML for Navigation Stack.</p>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-title">
+                    <div class="icon-badge" style="background:rgba(139,92,246,0.15);">👁️</div>YOLOv5 Object Detection</div>
+                <div class="card-body">
+                    <p>"You Only Look Once" v5 — single-pass convolutional neural network that predicts bounding boxes and class probabilities simultaneously. Runs on the RealSense D435i depth feed.</p>
+                    <p>Classifies objects as Static or Dynamic. Uses depth data to measure person distance. Triggers speed reduction: 10m zone → slow, 3m → full stop. CUDA-accelerated via OpenCV GPU build.</p>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-title">
+                    <div class="icon-badge" style="background:rgba(16,185,129,0.15);">🧠</div>ROS Navigation Stack</div>
+                <div class="card-body">
+                    <p>move_base node integrates: global costmap (for full-route planning), local costmap (real-time obstacle avoidance), global planner (Dijkstra/A*), and local planner (DWA — Dynamic Window Approach).</p>
+                    <p>Odometry from encoders provides the /odom topic. Goals set via coordinate shortcuts (x, y, theta). AMCL not used — Hector SLAM handles localization directly.</p>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-title">
+                    <div class="icon-badge" style="background:rgba(245,158,11,0.15);">😊</div>Face Recognition + gTTS</div>
+                <div class="card-body">
+                    <p>Uses the <span class="code-inline">face_recognition</span> library (dlib-based) to detect and match faces against a stored database. When a match is found within 6m, the system sends the person's name via the /person_name topic.</p>
+                    <p>Human Interaction node receives the name, calls Google TTS to generate audio, plays "Hello [Name]" through the speaker. 10-second cooldown prevents repeated greetings.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- RESULTS -->
+    <section id="results" class="section">
+        <div class="section-label">03 · Experimental Results</div>
+        <div class="section-title">Test Results &amp; Analysis</div>
+        <div class="section-desc">All experiments conducted at KMUTT CB4 building, both indoors and outdoors.</div>
+
+        <div class="card">
+            <div class="card-title">Encoder Distance Accuracy (271 cm target)</div>
+            <div class="card-body">
+                <table class="results-table" style="margin-top:8px;">
+                    <thead>
+                        <tr>
+                            <th>Trial</th>
+                            <th>Encoder L (triggers)</th>
+                            <th>Encoder R (triggers)</th>
+                            <th>Distance L (cm)</th>
+                            <th>Distance R (cm)</th>
+                            <th>Error L (%)</th>
+                            <th>Error R (%)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>1</td>
+                            <td>4615</td>
+                            <td>4535</td>
+                            <td>274.30</td>
+                            <td>269.54</td>
+                            <td style="color:#fbbf24">1.21%</td>
+                            <td style="color:#34d399">0.34%</td>
+                        </tr>
+                        <tr>
+                            <td>2</td>
+                            <td>4543</td>
+                            <td>4538</td>
+                            <td>270.02</td>
+                            <td>269.72</td>
+                            <td style="color:#34d399">0.36%</td>
+                            <td style="color:#34d399">0.47%</td>
+                        </tr>
+                        <tr>
+                            <td>3</td>
+                            <td>4542</td>
+                            <td>4561</td>
+                            <td>270.09</td>
+                            <td>271.22</td>
+                            <td style="color:#34d399">0.33%</td>
+                            <td style="color:#34d399">0.09%</td>
+                        </tr>
+                        <tr>
+                            <td>4</td>
+                            <td>4615</td>
+                            <td>4538</td>
+                            <td>274.30</td>
+                            <td>269.72</td>
+                            <td style="color:#fbbf24">1.21%</td>
+                            <td style="color:#34d399">0.47%</td>
+                        </tr>
+                        <tr>
+                            <td>5</td>
+                            <td>4542</td>
+                            <td>4535</td>
+                            <td>270.02</td>
+                            <td>269.54</td>
+                            <td style="color:#34d399">0.36%</td>
+                            <td style="color:#34d399">0.34%</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="highlight" style="margin-top:16px;"> All trials achieved &lt;2% error, confirming odometry reliability for straight-line navigation.</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">Navigation to Target Coordinate</div>
+            <div class="card-body">
+                <table class="results-table" style="margin-top:8px;">
+                    <thead>
+                        <tr>
+                            <th>Trial</th>
+                            <th>Target (X, Y, θ)</th>
+                            <th>Result</th>
+                            <th>Error</th>
+                            <th>Outcome</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>1</td>
+                            <td>4.997, 0, 0.034</td>
+                            <td>Reached exact target</td>
+                            <td style="color:#34d399">0.015 m</td>
+                            <td><span class="tag tag-ok">PASS</span></td>
+                        </tr>
+                        <tr>
+                            <td>2</td>
+                            <td>8.986, 0.102, 0.034</td>
+                            <td>Robot drifted away</td>
+                            <td style="color:#f87171">8 m</td>
+                            <td><span class="tag tag-limit">FAIL</span></td>
+                        </tr>
+                        <tr>
+                            <td>3</td>
+                            <td>3.989, 0.068, 0.034</td>
+                            <td>Robot drifted away</td>
+                            <td style="color:#f87171">3.04 m</td>
+                            <td><span class="tag tag-limit">FAIL</span></td>
+                        </tr>
+                        <tr>
+                            <td>4</td>
+                            <td>0.991, -8.170, 0.034</td>
+                            <td>Robot drifted away</td>
+                            <td style="color:#f87171">8 m</td>
+                            <td><span class="tag tag-limit">FAIL</span></td>
+                        </tr>
+                        <tr>
+                            <td>5</td>
+                            <td>8.986, 0.102, 0.034</td>
+                            <td>Robot drifted away</td>
+                            <td style="color:#fbbf24">2.06 m</td>
+                            <td><span class="tag tag-limit">FAIL</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="highlight" style="margin-top:16px;">⚠️ Straight-line navigation (Trial 1) succeeds. Off-axis targets fail due to inadequate turning mechanism — the drive system wasn't fully designed as differential drive.</div>
+            </div>
+        </div>
+
+        <div class="grid-2">
+            <div class="card">
+                <div class="card-title">Human Speed-Stop Response</div>
+                <div class="card-body">
+                    <table class="results-table" style="margin-top:4px;">
+                        <thead>
+                            <tr>
+                                <th>Distance (m)</th>
+                                <th>Speed (m/s)</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>12.2</td>
+                                <td>0.50</td>
+                                <td style="color:#34d399">Normal</td>
+                            </tr>
+                            <tr>
+                                <td>9.3</td>
+                                <td>0.45</td>
+                                <td style="color:#fbbf24">Slowing</td>
+                            </tr>
+                            <tr>
+                                <td>5.2</td>
+                                <td>0.25</td>
+                                <td style="color:#fbbf24">Slowing</td>
+                            </tr>
+                            <tr>
+                                <td>3.1</td>
+                                <td>0.10</td>
+                                <td style="color:#f87171">Near stop</td>
+                            </tr>
+                            <tr>
+                                <td>2.3</td>
+                                <td>0.00</td>
+                                <td style="color:#f87171">Stopped</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-title">CUDA FPS Benchmark</div>
+                <div class="card-body">
+                    <table class="results-table" style="margin-top:4px;">
+                        <thead>
+                            <tr>
+                                <th>Scenario</th>
+                                <th>No CUDA</th>
+                                <th>CUDA ON</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>No detection</td>
+                                <td>0.72</td>
+                                <td style="color:#34d399">3.13</td>
+                            </tr>
+                            <tr>
+                                <td>Object detected</td>
+                                <td>0.45</td>
+                                <td style="color:#34d399">1.12</td>
+                            </tr>
+                            <tr>
+                                <td>Person detected</td>
+                                <td>0.36</td>
+                                <td style="color:#34d399">0.82</td>
+                            </tr>
+                            <tr>
+                                <td>Person + recognition</td>
+                                <td>0.22</td>
+                                <td style="color:#fbbf24">0.45</td>
+                            </tr>
+                            <tr>
+                                <td>2 persons + recognition</td>
+                                <td>0.11</td>
+                                <td style="color:#fbbf24">0.37</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">Face Recognition Range Test</div>
+            <div class="card-body">
+                <table class="results-table" style="margin-top:4px;">
+                    <thead>
+                        <tr>
+                            <th>Distance (m)</th>
+                            <th>Person 1 ID</th>
+                            <th>Person 2 ID</th>
+                            <th>2-Person ID</th>
+                            <th>Greeting Correct?</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>0.5–3.0 m</td>
+                            <td style="color:#34d399">✓ Correct</td>
+                            <td style="color:#34d399">✓ Correct</td>
+                            <td style="color:#34d399">✓ Correct</td>
+                            <td style="color:#34d399">Yes</td>
+                        </tr>
+                        <tr>
+                            <td>4.0–6.0 m</td>
+                            <td style="color:#f87171">✗ Wrong</td>
+                            <td style="color:#34d399">✓ Correct (up to 6m)</td>
+                            <td style="color:#f87171">✗ Wrong</td>
+                            <td style="color:#f87171">No</td>
+                        </tr>
+                        <tr>
+                            <td>8.0–10.0 m</td>
+                            <td style="color:#7c8599">No detection</td>
+                            <td style="color:#7c8599">No detection</td>
+                            <td style="color:#7c8599">No detection</td>
+                            <td style="color:#7c8599">Silent</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div style="font-size:13px; color:var(--muted); margin-top:12px;">Recognition time increases with number of faces: ~1.2–1.5s for single person, ~3.0–3.7s for two people. Outdoor LiDAR mapping degrades due to open areas with no clear walls. Glass/mirrors cause LiDAR to see through rather than reflect.</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- PROS CONS -->
+    <section id="proscons" class="section">
+        <div class="section-label">04 · Evaluation</div>
+        <div class="section-title">Pros &amp; Cons</div>
+        <div class="section-desc">Honest critical assessment of every major system component.</div>
+
+        <div class="pro-con-grid" style="margin-bottom:20px">
+            <div class="pro-box">
+                <div class="box-header" style="color:var(--accent3);">✅ Strengths</div>
+                <div class="item">
+                    <div class="item-dot pro-dot"></div>
+                    <div>Hector SLAM works well indoors without wheel odometry — scan-matching alone gives usable maps in structured environments with clear walls.</div>
+                </div>
+                <div class="item">
+                    <div class="item-dot pro-dot"></div>
+                    <div>YOLOv5 provides reliable real-time person detection and classification into static/dynamic categories with minimal false positives in testing.</div>
+                </div>
+                <div class="item">
+                    <div class="item-dot pro-dot"></div>
+                    <div>Linear speed reduction (proportional to distance) creates smooth, safe deceleration when approaching people — much better than abrupt stops.</div>
+                </div>
+                <div class="item">
+                    <div class="item-dot pro-dot"></div>
+                    <div>CUDA acceleration delivers ~3× FPS improvement for image processing, making real-time YOLO + face recognition viable on Jetson hardware.</div>
+                </div>
+                <div class="item">
+                    <div class="item-dot pro-dot"></div>
+                    <div>Two-layer architecture (Jetson + Arduino) cleanly separates high-level intelligence from low-level motor control — modular and maintainable.</div>
+                </div>
+                <div class="item">
+                    <div class="item-dot pro-dot"></div>
+                    <div>Encoder odometry is accurate (&lt;2% error) for straight-line motion — reliable distance tracking for corridor-type deliveries.</div>
+                </div>
+                <div class="item">
+                    <div class="item-dot pro-dot"></div>
+                    <div>Human interaction via face recognition + gTTS is a differentiating feature — robots that greet people by name create much better user experience.</div>
+                </div>
+                <div class="item">
+                    <div class="item-dot pro-dot"></div>
+                    <div>Emergency stop via wireless RC remote is a critical safety feature during development — prevents damage in unexpected situations.</div>
+                </div>
+                <div class="item">
+                    <div class="item-dot pro-dot"></div>
+                    <div>LiFePO4 battery chemistry provides stable voltage discharge, BMS protection, and longer life cycle than standard Li-ion for robot applications.</div>
+                </div>
+            </div>
+            <div class="con-box">
+                <div class="box-header" style="color:var(--accent5);">❌ Weaknesses</div>
+                <div class="item">
+                    <div class="item-dot con-dot"></div>
+                    <div>Turning mechanism is severely flawed — the robot is not a true differential drive, causing large navigation errors (up to 8m) when any turning is required.</div>
+                </div>
+                <div class="item">
+                    <div class="item-dot con-dot"></div>
+                    <div>Hector SLAM fails completely outdoors — open spaces with no clear wall boundaries produce noisy, unusable maps. No GPS integration available.</div>
+                </div>
+                <div class="item">
+                    <div class="item-dot con-dot"></div>
+                    <div>FPS even with CUDA is very low (0.37–3.13 FPS) — system is near real-time at best. Any complex scene with multiple people becomes sluggish.</div>
+                </div>
+                <div class="item">
+                    <div class="item-dot con-dot"></div>
+                    <div>Face recognition accuracy drops beyond 3m and completely fails beyond 6–7m. Dependent on image quality and number of training images per person.</div>
+                </div>
+                <div class="item">
+                    <div class="item-dot con-dot"></div>
+                    <div>Motor drives excessive current on inclines/sharp turns, causing BMS to cut power and the robot to stall — degraded battery cells exacerbate this.</div>
+                </div>
+                <div class="item">
+                    <div class="item-dot con-dot"></div>
+                    <div>No outdoor navigation solution — robot is fundamentally limited to pre-mapped indoor environments. Cannot handle elevation changes, gravel, or open plazas.</div>
+                </div>
+                <div class="item">
+                    <div class="item-dot con-dot"></div>
+                    <div>LiDAR blind spots for low obstacles (curbs, steps below sensor height) — the 2D scan misses anything below the horizontal scan plane.</div>
+                </div>
+                <div class="item">
+                    <div class="item-dot con-dot"></div>
+                    <div>Glass and mirror surfaces are transparent to LiDAR infrared — causes mapping artifacts where walls appear missing.</div>
+                </div>
+                <div class="item">
+                    <div class="item-dot con-dot"></div>
+                    <div>No payload/cargo management system — the "delivery" function has no mechanism for package detection, pickup, or drop confirmation.</div>
+                </div>
+                <div class="item">
+                    <div class="item-dot con-dot"></div>
+                    <div>No multi-floor capability — no elevator integration, no floor-level awareness, limited to flat single-floor environments.</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section-label" style="margin-bottom:12px">CRITICAL ANALYSIS BY SYSTEM</div>
+
+        <div class="grid-3">
+            <div class="card">
+                <div class="card-title" style="font-size:13px;">Navigation &amp; SLAM</div>
+                <div class="card-body">
+                    <p>Rating: <strong style="color:#fbbf24;">6/10</strong> — indoor only</p>
+                    <p>Hector SLAM is solid for constrained indoor spaces but choosing it over GMapping or Cartographer limited outdoor robustness. No IMU fusion for drift correction.</p>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-title" style="font-size:13px;">Object Detection</div>
+                <div class="card-body">
+                    <p>Rating: <strong style="color:#34d399;">8/10</strong> — good choice</p>
+                    <p>YOLOv5 + RealSense D435i is an excellent combination. Depth-aware detection is more reliable than LiDAR alone for person avoidance. CUDA integration was smart.</p>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-title" style="font-size:13px;">Mechanical Design</div>
+                <div class="card-body">
+                    <p>Rating: <strong style="color:#f87171;">4/10</strong> — significant flaw</p>
+                    <p>Chain drive with only 2 driven rear wheels and a fixed front caster is not differential drive. Turning accuracy destroyed navigation goals. This is the project's #1 failure point.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- IMPROVEMENTS -->
+    <section id="improvements" class="section">
+        <div class="section-label">05 · Better Way</div>
+        <div class="section-title">Recommended Improvements</div>
+        <div class="section-desc">Actionable, prioritized upgrades ordered by impact and feasibility.</div>
+
+        <div class="improve-card high">
+            <div class="improve-title">1. Fix the Mechanical Drive System <span class="priority-badge high-badge">HIGH PRIORITY</span></div>
+            <div class="improve-body">
+                <p>The single biggest failure: chain-drive with only rear wheels in a non-ideal differential configuration causes massive turning errors. <strong>Solutions:</strong></p>
+                <p>• <strong>Option A (Preferred):</strong> Switch to 4-wheel differential drive with independent motorized front wheels. This allows true point-turn capability and eliminates turning error entirely.</p>
+                <p>• <strong>Option B:</strong> Replace front fixed wheels with a single omni-wheel or caster ball that offers zero resistance in any direction, enabling cleaner differential steering.</p>
+                <p>• <strong>Option C:</strong> Add a Mecanum wheel system for holonomic motion — the robot can strafe sideways, enabling much more flexible indoor navigation in tight spaces.</p>
+                <p>Expected improvement: navigation accuracy should jump from "fails on any off-axis target" to &lt;20cm error across any target coordinate.</p>
+            </div>
+        </div>
+
+        <div class="improve-card high">
+            <div class="improve-title">2. Replace Hector SLAM with Cartographer or RTabMap <span class="priority-badge high-badge">HIGH PRIORITY</span></div>
+            <div class="improve-body">
+                <p>Hector SLAM is purely LiDAR scan-matching with no sensor fusion. Google Cartographer or RTab-Map would provide:</p>
+                <p>• <strong>IMU fusion:</strong> Cartographer fuses LiDAR + IMU, dramatically reducing drift on uneven terrain and sharp turns. Critical for outdoor use.</p>
+                <p>• <strong>Loop closure:</strong> Corrects accumulated drift when the robot revisits known areas — prevents the map "drifting" during long deployments.</p>
+                <p>• <strong>3D mapping with RTab-Map:</strong> Uses the RealSense D435i (already installed) to create 3D point cloud maps, enabling detection of low obstacles the 2D LiDAR misses (curbs, stairs).</p>
+                <p>• <strong>Outdoor readiness:</strong> Add GPS (e.g., UBlox M8N) and fuse with Cartographer for outdoor localization. GNSS provides global reference; local scan-matching handles precision.</p>
+            </div>
+        </div>
+
+        <div class="improve-card med">
+            <div class="improve-title">3. Upgrade to YOLOv8 or YOLOv11 + Add Tracking <span class="priority-badge med-badge">MEDIUM PRIORITY</span></div>
+            <div class="improve-body">
+                <p>YOLOv5 was released in 2020. Upgrading to YOLOv8/v11 (Ultralytics) provides 15–25% better mAP at comparable speeds, plus native TensorRT export for Jetson optimization.</p>
+                <p>• <strong>Add DeepSORT or ByteTrack:</strong> Multi-object tracking assigns persistent IDs to detected people, enabling the robot to follow a specific person across frames instead of re-detecting each frame independently. This also reduces
+                    computation — no need to re-run face recognition on every frame.</p>
+                <p>• <strong>TensorRT optimization:</strong> Export YOLOv8 to TensorRT FP16 — achieves 5–10× speedup over PyTorch on Jetson. Can push to 10+ FPS easily.</p>
+                <p>• <strong>ArcFace/InsightFace for recognition:</strong> Replace dlib face_recognition with ArcFace (SOTA face embedding) — significantly better accuracy at 6m+ range with smaller gallery.</p>
+            </div>
+        </div>
+
+        <div class="improve-card med">
+            <div class="improve-title">4. Add ROS2 Migration + DDS Communication <span class="priority-badge med-badge">MEDIUM PRIORITY</span></div>
+            <div class="improve-body">
+                <p>ROS1 Noetic reaches end-of-life in May 2025. ROS2 (Humble/Iron) offers significant advantages:</p>
+                <p>• <strong>DDS middleware:</strong> Real-time communication guarantees, better for safety-critical motor commands. No single rosmaster point-of-failure.</p>
+                <p>• <strong>Nav2 (Navigation2):</strong> ROS2's Navigation Stack is actively developed with better plugin architecture, recoveries, and behavior trees for complex navigation logic.</p>
+                <p>• <strong>Lifecycle nodes:</strong> Better startup/shutdown management — critical for a delivery robot that needs to start reliably every time.</p>
+                <p>• <strong>Security:</strong> ROS2 supports SROS2 for encrypted communications — relevant if robot handles sensitive delivery data.</p>
+            </div>
+        </div>
+
+        <div class="improve-card med">
+            <div class="improve-title">5. Build a Payload Management System <span class="priority-badge med-badge">MEDIUM PRIORITY</span></div>
+            <div class="improve-body">
+                <p>Currently this robot has no cargo system — it's "delivery" in name only. A proper system needs:</p>
+                <p>• <strong>Cargo compartment with locking mechanism:</strong> QR-code or RFID-based unlock for recipient verification. Simple servo-driven lid or drawer.</p>
+                <p>• <strong>Load sensor:</strong> Confirms package pickup and delivery completion. Prevents robot from departing before package is loaded/retrieved.</p>
+                <p>• <strong>Delivery management software:</strong> Web/mobile app to assign delivery jobs, track robot location, log delivery history. Integrate with ROS via REST API bridge.</p>
+                <p>• <strong>Multi-stop delivery:</strong> Route optimization across multiple delivery points in a pre-mapped environment.</p>
+            </div>
+        </div>
+
+        <div class="improve-card low">
+            <div class="improve-title">6. Add IMU + Wheel Slip Detection <span class="priority-badge low-badge">INCREMENTAL</span></div>
+            <div class="improve-body">
+                <p>The RealSense D435i already has an integrated IMU (accelerometer + gyroscope). Enable and fuse it:</p>
+                <p>• <strong>Encoder + IMU fusion (EKF):</strong> Extended Kalman Filter combining wheel odometry with IMU data dramatically reduces odometry drift, especially on uneven surfaces where wheels slip.</p>
+                <p>• <strong>Wheel slip detection:</strong> Compare encoder speed vs IMU acceleration — when they diverge, flag slip and correct. Currently, wheel slip silently corrupts odometry.</p>
+                <p>• <strong>robot_localization package:</strong> ROS package implementing EKF/UKF fusion. Drop-in improvement to odometry with minimal code changes.</p>
+            </div>
+        </div>
+
+        <div class="improve-card low">
+            <div class="improve-title">7. Upgrade Compute and Sensor Suite <span class="priority-badge low-badge">INCREMENTAL</span></div>
+            <div class="improve-body">
+                <p>• <strong>Jetson Orin NX → Jetson AGX Orin:</strong> 12× more AI performance (275 TOPS vs 35 TOPS). Enables running multiple neural networks simultaneously without FPS degradation.</p>
+                <p>• <strong>Add 3D LiDAR (Ouster OS0/OS1):</strong> Replace 2D RPLiDAR with a 3D unit for full-height obstacle detection. Sees low curbs, prone humans, uneven terrain that 2D misses entirely.</p>
+                <p>• <strong>Add UWB (Ultra-Wideband) positioning:</strong> Indoor positioning with 10–30cm accuracy independent of LiDAR maps. Works in featureless corridors where SLAM struggles.</p>
+                <p>• <strong>Upgrade battery to larger capacity:</strong> Current 12Ah limits runtime. A 30–40Ah pack would support multi-hour operation for real deployment scenarios.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- SUMMARY / LECTURE -->
+    <section id="summary" class="section">
+        <div class="section-label">06 · Knowledge Summary</div>
+        <div class="section-title">Full Lecture — Everything You Need to Know</div>
+        <div class="section-desc">A structured walkthrough of all key concepts from this project, explained from fundamentals up.</div>
+
+        <div class="lecture-block">
+            <div class="lecture-num">LESSON 01</div>
+            <div class="lecture-heading">Autonomous Mobile Robots (AMR) &amp; Differential Drive Kinematics</div>
+            <div class="lecture-body">
+                <p>An <strong>Autonomous Mobile Robot (AMR)</strong> must solve three fundamental problems simultaneously: <em>Where am I?</em> (localization), <em>What surrounds me?</em> (perception), and <em>How do I get there?</em> (path planning). This
+                    project addresses all three.</p>
+                <p>The robot uses a <strong>Differential Drive</strong> configuration — two independently driven rear wheels with passive front wheels. By controlling the speed ratio between left and right wheels, the robot turns. When both wheels spin at
+                    equal speed: straight. When one spins faster than the other: curved turn. When they spin in opposite directions: point turn.</p>
+                <p>The kinematic equations are: <strong>v = R(θ̇R + θ̇L)/2</strong> (linear velocity) and <strong>ω = R(θ̇R − θ̇L)/2L</strong> (angular velocity), where R is wheel radius and L is the half-distance between wheels. These equations are the
+                    mathematical foundation of all robot motion control.</p>
+                <div class="highlight">⚠️ The project's critical flaw: the mechanical implementation didn't fully realize differential drive, causing the robot to fail all off-axis navigation targets. Perfect kinematics math means nothing if the hardware can't execute it.</div>
+            </div>
+        </div>
+
+        <div class="lecture-block">
+            <div class="lecture-num">LESSON 02</div>
+            <div class="lecture-heading">LiDAR — Light Detection and Ranging</div>
+            <div class="lecture-body">
+                <p>LiDAR works by emitting laser pulses and measuring how long they take to return (Time of Flight, ToF). Distance = (speed of light × time) / 2. The RPLiDAR S2E spins 360° and emits thousands of pulses per second, producing a <strong>point cloud</strong>                    — a 2D ring of distance measurements at precise angles.</p>
+                <p>Key specifications of the S2E: range 0.05–30m, scan frequency 10–15 Hz, angular resolution ~0.1°, ethernet UDP communication (IP 192.168.11.102). This is connected to the Jetson via a local network.</p>
+                <p><strong>LiDAR limitations in this project:</strong> Glass and mirrors are transparent to infrared — the laser passes through, producing "holes" in the map where walls should be. Open outdoor spaces with no reflective surfaces within 30m
+                    produce noisy, sparse point clouds that SLAM cannot use reliably. Low obstacles (curbs &lt;15cm) below the scan plane are completely invisible.</p>
+            </div>
+        </div>
+
+        <div class="lecture-block">
+            <div class="lecture-num">LESSON 03</div>
+            <div class="lecture-heading">SLAM — Simultaneous Localization and Mapping</div>
+            <div class="lecture-body">
+                <p>SLAM solves a chicken-and-egg problem: you need a map to localize yourself, but you need to know your location to build a map. The algorithm solves both simultaneously by maintaining a probability distribution over possible robot positions
+                    while incrementally building the map.</p>
+                <p><strong>Hector SLAM</strong> (used in this project) solves this with scan-to-map matching using Gauss-Newton optimization. Each new LiDAR scan is aligned against the existing map to find the robot's most probable position. The map is an
+                    <strong>occupancy grid</strong>: each cell is labeled free (0), occupied (1), or unknown (-1) with centimeter-level resolution.</p>
+                <p><strong>Why Hector SLAM works indoors:</strong> Indoor spaces have abundant features (walls, corners, furniture) within sensor range. Scan-matching converges quickly because each new scan matches well against existing features. No odometry
+                    needed — pure LiDAR.</p>
+                <p><strong>Why Hector SLAM fails outdoors:</strong> Open spaces have sparse features. The algorithm cannot converge — small orientation errors accumulate into large position errors. Better alternatives: Google Cartographer (IMU fusion), or
+                    augmenting with GPS for global localization.</p>
+            </div>
+        </div>
+
+        <div class="lecture-block">
+            <div class="lecture-num">LESSON 04</div>
+            <div class="lecture-heading">ROS — Robot Operating System Architecture</div>
+            <div class="lecture-body">
+                <p>ROS is not an OS — it's a middleware framework that runs on Ubuntu Linux. Its architecture is a <strong>distributed computation graph</strong> where individual programs (Nodes) communicate by publishing and subscribing to named data channels
+                    (Topics).
+                </p>
+                <p><strong>Key concepts:</strong> <span class="code-inline">roscore</span> is the master registry — it maintains a directory of all active nodes and topics. A <strong>Publisher Node</strong> sends data to a topic; a <strong>Subscriber Node</strong>                    receives it. A <strong>Service</strong> provides request-response communication. <strong>Messages</strong> are typed data structures (e.g., <span class="code-inline">geometry_msgs/Twist</span> for velocity commands).</p>
+                <p><strong>Key topics in this project:</strong> <span class="code-inline">/scan</span> (LiDAR data), <span class="code-inline">/odom</span> (odometry), <span class="code-inline">/map</span> (SLAM map), <span class="code-inline">/cmd_vel</span>                    (velocity commands), <span class="code-inline">/object_type_topic</span> (YOLO classification), <span class="code-inline">/person_name</span> (face recognition result).</p>
+                <p><strong>TF (Transform) system:</strong> ROS tracks the geometric relationship between all robot frames — <span class="code-inline">base_link</span> (robot center), <span class="code-inline">laser</span> (LiDAR position), <span class="code-inline">camera</span>                    (camera position), <span class="code-inline">odom</span> (odometry frame), <span class="code-inline">map</span> (world frame). The Navigation Stack needs all these transforms defined correctly to function.</p>
+                <p><strong>rosserial:</strong> Bridges ROS topics to Arduino via USB serial. The Arduino receives <span class="code-inline">/cmd_vel</span> Twist messages and translates linear/angular velocity into individual wheel PWM signals for the BTS7960
+                    motor drivers.</p>
+            </div>
+        </div>
+
+        <div class="lecture-block">
+            <div class="lecture-num">LESSON 05</div>
+            <div class="lecture-heading">ROS Navigation Stack — Path Planning</div>
+            <div class="lecture-body">
+                <p>The Navigation Stack's central node is <strong>move_base</strong>. When given a goal coordinate, it orchestrates path planning using two costmaps and two planners:</p>
+                <p><strong>Global Costmap:</strong> A static representation of the entire known map, inflated around obstacles (obstacles appear "larger" by the robot's radius, ensuring safe clearance). The <strong>Global Planner</strong> (Dijkstra or A*)
+                    computes an optimal path from current position to goal across this costmap.</p>
+                <p><strong>Local Costmap:</strong> A dynamic, sensor-updated window around the robot showing real-time obstacles (people, moved furniture). The <strong>Local Planner</strong> (DWA — Dynamic Window Approach) generates velocity commands that
+                    follow the global path while avoiding local obstacles.</p>
+                <p>Odometry from encoders provides <span class="code-inline">/odom</span> — the robot's estimated position relative to its starting point. Goal coordinates are specified in the map frame (from SLAM). The TF tree bridges these frames. This
+                    project used keyboard shortcuts to pre-load known destination coordinates, avoiding the need for a UI goal-setting interface.</p>
+            </div>
+        </div>
+
+        <div class="lecture-block">
+            <div class="lecture-num">LESSON 06</div>
+            <div class="lecture-heading">YOLO Object Detection &amp; Depth-Aware Stopping</div>
+            <div class="lecture-body">
+                <p><strong>YOLO (You Only Look Once)</strong> is a convolutional neural network that performs object detection in a single forward pass. It divides the image into a grid, and each cell predicts bounding boxes and class probabilities simultaneously.
+                    This single-pass design makes it dramatically faster than two-stage detectors (R-CNN family).</p>
+                <p>YOLOv5 classifies objects with confidence scores. In this project, detected objects are labeled Static (furniture, walls) or Dynamic (people, animals). The <strong>Intel RealSense D435i</strong> adds depth — using structured light and
+                    stereo infrared cameras, it measures the distance to each pixel. The bounding box centroid depth gives person-to-robot distance.</p>
+                <p><strong>Speed control logic:</strong> Three zones control behavior. Zone 1 (&gt;10m): full speed from <span class="code-inline">/cmd_vel</span>. Zone 2 (3–10m): speed multiplier = distance/10, creating linear deceleration. Zone 3 (&lt;3m):
+                    velocity = 0, robot stops. The <span class="code-inline">modified_cmd_vel</span> node applies this multiplier before sending to rosserial.</p>
+                <p><strong>Inertia problem:</strong> At Zone 3 trigger, the robot has momentum. Heavy robots don't stop instantly — they coast 0.5–1m past the stop command. Solution: trigger stopping earlier (e.g., 4m) to account for inertia, or implement
+                    active braking (reverse PWM briefly).</p>
+            </div>
+        </div>
+
+        <div class="lecture-block">
+            <div class="lecture-num">LESSON 07</div>
+            <div class="lecture-heading">Face Recognition &amp; Human-Robot Interaction</div>
+            <div class="lecture-body">
+                <p>The <span class="code-inline">face_recognition</span> Python library (built on dlib) uses a deep convolutional neural network to map face images to 128-dimensional embedding vectors. Faces of the same person cluster close together in this
+                    space; different people are far apart. Recognition is then a nearest-neighbor search: compare a detected face's embedding to all stored embeddings.</p>
+                <p><strong>Factors affecting accuracy:</strong> Image resolution (lower resolution at distance = less discriminative features), lighting (extreme shadows degrade embeddings), pose variation (frontal face best, profile worst), and training
+                    set diversity (more photos from different angles = better generalization).</p>
+                <p><strong>gTTS (Google Text-to-Speech):</strong> Converts text strings to audio MP3 files via the Google Cloud TTS API. The system builds the greeting string "Hello [Name]", calls gTTS, saves the MP3, and plays it through the speaker via
+                    a system audio command. The 10-second cooldown prevents the robot from spamming greetings when a person lingers.</p>
+                <p><strong>Multi-person handling:</strong> Processing time scales with people detected — each face requires an embedding computation and gallery comparison. With 2 people, processing takes ~3–3.7 seconds. This latency is problematic for real-time
+                    interaction at walking speed.</p>
+            </div>
+        </div>
+
+        <div class="lecture-block">
+            <div class="lecture-num">LESSON 08</div>
+            <div class="lecture-heading">CUDA &amp; GPU-Accelerated Computer Vision</div>
+            <div class="lecture-body">
+                <p>A CPU (Central Processing Unit) has 8–32 powerful cores optimized for sequential tasks. A GPU (Graphics Processing Unit) has thousands of smaller cores optimized for massively parallel computation. Image processing is inherently parallel
+                    — each pixel can be processed independently, making GPUs ideal.</p>
+                <p><strong>CUDA (Compute Unified Device Architecture)</strong> is NVIDIA's framework for writing GPU-accelerated code. OpenCV compiled with CUDA support offloads image preprocessing (resize, normalize, color conversion) and neural network
+                    inference from CPU to GPU.</p>
+                <p>The Jetson Orin NX 16GB has an integrated NVIDIA Ampere GPU with 1024 CUDA cores and 32 Tensor Cores for AI acceleration. Enabling CUDA in OpenCV required compiling from source — a ~5-6 hour build process. The result: 3× FPS improvement
+                    for object detection alone.</p>
+                <p><strong>Key insight:</strong> Even with CUDA, FPS peaks at ~3 FPS in simple scenes and drops to 0.37 FPS with two people + recognition. For a real delivery robot, 5–10 FPS minimum is needed. TensorRT optimization (converting YOLOv5 to
+                    optimized engine format) could achieve this on the same hardware.</p>
+            </div>
+        </div>
+
+        <div class="lecture-block">
+            <div class="lecture-num">LESSON 09</div>
+            <div class="lecture-heading">Power Systems, Motor Drivers &amp; Safety Architecture</div>
+            <div class="lecture-body">
+                <p><strong>LiFePO4 (Lithium Iron Phosphate)</strong> was chosen over standard Li-ion for good reasons: flat discharge curve (stable voltage throughout charge cycle), higher cycle life (~2000+ cycles vs ~500 for Li-ion), much lower fire risk
+                    (thermally stable chemistry), and better performance at high discharge rates needed for motors.</p>
+                <p>The 24V system is stepped down using two switching regulators: <strong>XL4015</strong> (5A, 24V→5V) powers Arduino, encoders, and RC receiver. <strong>QS-2405</strong> (8A, 24V→12V) powers Jetson, LiDAR, and display. Switching regulators
+                    (buck converters) are 90–96% efficient — far better than linear regulators which waste excess voltage as heat.</p>
+                <p><strong>BTS7960 H-Bridge Motor Driver:</strong> Controls each motor with a PWM signal. The H-bridge allows current to flow in either direction through the motor (forward/reverse). Peak current 43A per driver. The issue: degraded battery
+                    cells have higher internal resistance, causing voltage to sag under load — this triggers the BMS overcurrent protection and cuts power entirely.</p>
+                <p><strong>Safety layers:</strong> (1) Software emergency stop via <span class="code-inline">modified_cmd_vel</span> zeroing velocity. (2) Hardware emergency stop button on robot body. (3) Wireless RC stop via FS-i6 switch — most practical
+                    during testing since operator doesn't need to chase the robot. Safety should always have physical hardware backup independent of software.</p>
+            </div>
+        </div>
+
+        <div class="lecture-block">
+            <div class="lecture-num">LESSON 10</div>
+            <div class="lecture-heading">Lessons Learned &amp; Project Takeaways</div>
+            <div class="lecture-body">
+                <p><strong>1. Mechanical precedes software.</strong> The navigation algorithm was correctly implemented, but the mechanical turning flaw made it useless for non-straight paths. Always validate hardware capabilities before assuming software
+                    can compensate.</p>
+                <p><strong>2. Sensor selection determines feasibility.</strong> Choosing a 2D LiDAR limits the robot to environments with clear vertical walls at sensor height. A 3D LiDAR or multi-sensor fusion (cameras + 2D LiDAR) would have enabled outdoor
+                    operation and low-obstacle detection from the start.</p>
+                <p><strong>3. SLAM algorithm selection is environment-specific.</strong> Hector SLAM for an outdoor delivery robot was a mismatch. Research the deployment environment thoroughly before committing to an algorithm.</p>
+                <p><strong>4. GPU optimization is not optional for real-time vision.</strong> 0.22 FPS without CUDA is unusable. CUDA was essential. TensorRT would be the next required step for deployment-grade performance.</p>
+                <p><strong>5. Human-robot interaction is valuable.</strong> Face recognition + greeting by name significantly elevates user experience. For a real delivery robot, this feature differentiates it from a simple cart. The interaction system design
+                    (cooldown timer, priority queue for multiple names) was thoughtful.</p>
+                <p><strong>6. Modularity enables testing.</strong> The ROS topic-based architecture allowed each subsystem (SLAM, navigation, YOLO, face recognition) to be tested independently before integration. This saved significant debugging time.</p>
+                <div class="highlight">This project successfully demonstrates ROS-based autonomous robotics fundamentals — SLAM, navigation, AI vision, and human interaction — in a unified system. The mechanical limitations and outdoor failures are fixable engineering problems,
+                    not conceptual failures. The software architecture is sound.</div>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        function show(id) {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            event.target.classList.add('active');
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        }
+    </script>
+</body>
+
+</html>

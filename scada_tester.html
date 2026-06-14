@@ -1,0 +1,1146 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>SCADA - Modbus TCP</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: monospace;
+            background: #1a1a1a;
+            color: #e0e0e0;
+            font-size: 13px;
+        }
+        /* Layout */
+        
+        #app {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+        
+        #header {
+            background: #111;
+            border-bottom: 1px solid #333;
+            padding: 6px 12px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        
+        #header h1 {
+            font-size: 14px;
+            color: #0f0;
+            letter-spacing: 2px;
+        }
+        
+        #ws-status {
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 2px;
+        }
+        
+        .ws-ok {
+            background: #1a3a1a;
+            color: #0f0;
+            border: 1px solid #0a0;
+        }
+        
+        .ws-err {
+            background: #3a1a1a;
+            color: #f44;
+            border: 1px solid #a00;
+        }
+        
+        #tabs {
+            background: #111;
+            border-bottom: 1px solid #333;
+            display: flex;
+        }
+        
+        .tab {
+            padding: 8px 20px;
+            cursor: pointer;
+            border-right: 1px solid #333;
+            font-size: 12px;
+            color: #888;
+        }
+        
+        .tab:hover {
+            color: #ccc;
+        }
+        
+        .tab.active {
+            color: #0f0;
+            border-bottom: 2px solid #0f0;
+            background: #1a1a1a;
+        }
+        
+        #content {
+            flex: 1;
+            overflow: auto;
+            padding: 12px;
+        }
+        /* Panels */
+        
+        .panel {
+            display: none;
+        }
+        
+        .panel.active {
+            display: block;
+        }
+        /* Tables */
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        th {
+            background: #222;
+            color: #888;
+            text-align: left;
+            padding: 6px 8px;
+            font-size: 11px;
+            border-bottom: 1px solid #333;
+        }
+        
+        td {
+            padding: 5px 8px;
+            border-bottom: 1px solid #2a2a2a;
+            vertical-align: middle;
+        }
+        
+        tr:hover td {
+            background: #222;
+        }
+        /* Buttons */
+        
+        btn,
+        .btn {
+            display: inline-block;
+            padding: 4px 10px;
+            cursor: pointer;
+            border: 1px solid #444;
+            background: #2a2a2a;
+            color: #ccc;
+            font-family: monospace;
+            font-size: 12px;
+            border-radius: 2px;
+        }
+        
+        .btn:hover {
+            background: #333;
+            border-color: #666;
+        }
+        
+        .btn-green {
+            border-color: #0a0;
+            color: #0d0;
+        }
+        
+        .btn-green:hover {
+            background: #1a2a1a;
+        }
+        
+        .btn-red {
+            border-color: #a00;
+            color: #f44;
+        }
+        
+        .btn-red:hover {
+            background: #2a1a1a;
+        }
+        
+        .btn-blue {
+            border-color: #00a;
+            color: #48f;
+        }
+        
+        .btn-blue:hover {
+            background: #1a1a2a;
+        }
+        
+        .btn-yellow {
+            border-color: #aa0;
+            color: #ff4;
+        }
+        
+        .btn-yellow:hover {
+            background: #2a2a1a;
+        }
+        
+        .btn-sm {
+            padding: 2px 7px;
+            font-size: 11px;
+        }
+        /* Forms */
+        
+        .form-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin-bottom: 8px;
+            flex-wrap: wrap;
+        }
+        
+        .form-row label {
+            color: #888;
+            font-size: 11px;
+            min-width: 90px;
+        }
+        
+        input,
+        select {
+            background: #222;
+            border: 1px solid #444;
+            color: #e0e0e0;
+            padding: 4px 8px;
+            font-family: monospace;
+            font-size: 12px;
+            border-radius: 2px;
+        }
+        
+        input:focus,
+        select:focus {
+            outline: none;
+            border-color: #0a0;
+        }
+        
+        input[type="number"] {
+            width: 90px;
+        }
+        
+        input[type="text"] {
+            width: 140px;
+        }
+        /* Status badges */
+        
+        .badge {
+            display: inline-block;
+            padding: 1px 6px;
+            border-radius: 2px;
+            font-size: 11px;
+        }
+        
+        .badge-green {
+            background: #0a2a0a;
+            color: #0f0;
+            border: 1px solid #0a0;
+        }
+        
+        .badge-red {
+            background: #2a0a0a;
+            color: #f44;
+            border: 1px solid #a00;
+        }
+        
+        .badge-yellow {
+            background: #2a2a0a;
+            color: #ff4;
+            border: 1px solid #aa0;
+        }
+        
+        .badge-gray {
+            background: #222;
+            color: #888;
+            border: 1px solid #444;
+        }
+        /* Quality indicator */
+        
+        .q-good {
+            color: #0f0;
+        }
+        
+        .q-bad {
+            color: #f44;
+        }
+        
+        .q-unknown {
+            color: #888;
+        }
+        /* Section header */
+        
+        .sec-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .sec-title {
+            color: #0f0;
+            font-size: 12px;
+            letter-spacing: 1px;
+        }
+        /* Log */
+        
+        #log {
+            background: #111;
+            border: 1px solid #333;
+            height: 200px;
+            overflow-y: auto;
+            font-size: 11px;
+            padding: 6px;
+            margin-top: 10px;
+        }
+        
+        .log-info {
+            color: #888;
+        }
+        
+        .log-ok {
+            color: #0a0;
+        }
+        
+        .log-err {
+            color: #f44;
+        }
+        
+        .log-warn {
+            color: #aa0;
+        }
+        /* Modal */
+        
+        #modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 100;
+        }
+        
+        #modal-overlay.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        #modal {
+            background: #1e1e1e;
+            border: 1px solid #444;
+            padding: 20px;
+            width: 420px;
+            max-width: 95vw;
+        }
+        
+        #modal h3 {
+            color: #0f0;
+            margin-bottom: 14px;
+            font-size: 13px;
+        }
+        
+        #modal .form-row label {
+            min-width: 120px;
+        }
+        
+        #modal input,
+        #modal select {
+            width: 200px;
+        }
+        
+        #modal-btns {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+            margin-top: 14px;
+        }
+        /* Value display */
+        
+        .val-display {
+            font-size: 14px;
+            font-weight: bold;
+        }
+        
+        .val-null {
+            color: #555;
+        }
+        /* Gauge mini */
+        
+        .mini-bar {
+            display: inline-block;
+            width: 60px;
+            height: 8px;
+            background: #333;
+            border-radius: 2px;
+            vertical-align: middle;
+            margin-left: 4px;
+        }
+        
+        .mini-bar-fill {
+            height: 100%;
+            background: #0a0;
+            border-radius: 2px;
+            transition: width 0.3s;
+        }
+        /* Alarm row */
+        
+        .alarm-active td {
+            background: #2a1a00 !important;
+        }
+        
+        .alarm-active td:first-child {
+            border-left: 3px solid #fa0;
+        }
+        /* Raw console */
+        
+        #raw-output {
+            background: #111;
+            border: 1px solid #333;
+            min-height: 80px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-size: 11px;
+            padding: 6px;
+            font-family: monospace;
+            color: #0f0;
+            margin-top: 8px;
+        }
+        /* Trend sparkline */
+        
+        .spark {
+            display: inline-block;
+            width: 80px;
+            height: 20px;
+            vertical-align: middle;
+        }
+        /* Stats bar */
+        
+        #statsbar {
+            background: #111;
+            border-top: 1px solid #333;
+            padding: 4px 12px;
+            display: flex;
+            gap: 20px;
+            font-size: 11px;
+            color: #666;
+        }
+        
+        #statsbar span {
+            color: #888;
+        }
+        
+        #statsbar .v {
+            color: #aaa;
+        }
+        /* Connection card grid */
+        
+        .conn-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 10px;
+        }
+        
+        .conn-card {
+            background: #1e1e1e;
+            border: 1px solid #333;
+            padding: 10px;
+        }
+        
+        .conn-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .conn-card-name {
+            font-size: 12px;
+            color: #ccc;
+        }
+        
+        .conn-card-stats {
+            font-size: 11px;
+            color: #555;
+            margin-top: 6px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <div id="header">
+            <h1>⚡ SCADA / MODBUS TCP</h1>
+            <div id="ws-status" class="ws-err">WS: DISCONNECTED</div>
+            <div style="color:#555;font-size:11px" id="server-url">Server: http://localhost:3000</div>
+            <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+                <span style="color:#555;font-size:11px">Active Alarms:</span>
+                <span id="hdr-alarms" style="color:#fa0;font-size:12px">0</span>
+                <span style="color:#555;font-size:11px">Tags:</span>
+                <span id="hdr-tags" style="color:#0f0;font-size:12px">0</span>
+            </div>
+        </div>
+
+        <div id="tabs">
+            <div class="tab active" onclick="switchTab('connections')">CONNECTIONS</div>
+            <div class="tab" onclick="switchTab('tags')">TAGS / VALUES</div>
+            <div class="tab" onclick="switchTab('alarms')">ALARMS</div>
+            <div class="tab" onclick="switchTab('rawtest')">RAW TEST</div>
+            <div class="tab" onclick="switchTab('log')">EVENT LOG</div>
+        </div>
+
+        <div id="content">
+            <!-- CONNECTIONS -->
+            <div class="panel active" id="panel-connections">
+                <div class="sec-header">
+                    <span class="sec-title">MODBUS TCP CONNECTIONS</span>
+                    <button class="btn btn-green btn-sm" onclick="openAddConn()">+ Add Connection</button>
+                </div>
+                <div class="conn-grid" id="conn-grid"></div>
+            </div>
+
+            <!-- TAGS -->
+            <div class="panel" id="panel-tags">
+                <div class="sec-header">
+                    <span class="sec-title">TAG MANAGER</span>
+                    <div style="display:flex;gap:8px">
+                        <button class="btn btn-yellow btn-sm" onclick="readAllTags()">↻ Read All</button>
+                        <button class="btn btn-green btn-sm" onclick="openAddTag()">+ Add Tag</button>
+                    </div>
+                </div>
+                <table id="tag-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Connection</th>
+                            <th>FC</th>
+                            <th>Address</th>
+                            <th>Value</th>
+                            <th>Quality</th>
+                            <th>Timestamp</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tag-tbody"></tbody>
+                </table>
+            </div>
+
+            <!-- ALARMS -->
+            <div class="panel" id="panel-alarms">
+                <div class="sec-header">
+                    <span class="sec-title">ALARM MANAGEMENT</span>
+                    <button class="btn btn-green btn-sm" onclick="openAddAlarm()">+ Add Alarm</button>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Tag</th>
+                            <th>Type</th>
+                            <th>Limit</th>
+                            <th>Status</th>
+                            <th>Last Change</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="alarm-tbody"></tbody>
+                </table>
+            </div>
+
+            <!-- RAW TEST -->
+            <div class="panel" id="panel-rawtest">
+                <div class="sec-title" style="margin-bottom:12px">RAW MODBUS READ/WRITE</div>
+                <div class="form-row">
+                    <label>Connection</label>
+                    <select id="raw-conn"></select>
+                </div>
+                <div class="form-row">
+                    <label>Function Code</label>
+                    <select id="raw-fc">
+          <option value="1">FC01 - Read Coils</option>
+          <option value="2">FC02 - Read Discrete Inputs</option>
+          <option value="3" selected>FC03 - Read Holding Registers</option>
+          <option value="4">FC04 - Read Input Registers</option>
+          <option value="5">FC05 - Write Single Coil</option>
+          <option value="6">FC06 - Write Single Register</option>
+          <option value="16">FC16 - Write Multiple Registers</option>
+        </select>
+                </div>
+                <div class="form-row">
+                    <label>Start Address</label>
+                    <input type="number" id="raw-addr" value="0" min="0" max="65535">
+                    <label style="min-width:50px">Count</label>
+                    <input type="number" id="raw-count" value="10" min="1" max="125">
+                </div>
+                <div class="form-row" id="raw-write-row" style="display:none">
+                    <label>Write Value</label>
+                    <input type="text" id="raw-write-val" placeholder="value or [1,2,3]">
+                </div>
+                <div class="form-row">
+                    <button class="btn btn-green" onclick="doRawRead()">▶ Execute Read</button>
+                    <button class="btn btn-yellow" onclick="doRawWrite()">▶ Execute Write</button>
+                    <button class="btn btn-sm" onclick="clearRawOutput()">Clear</button>
+                </div>
+                <div id="raw-output"></div>
+            </div>
+
+            <!-- LOG -->
+            <div class="panel" id="panel-log">
+                <div class="sec-header">
+                    <span class="sec-title">EVENT LOG</span>
+                    <button class="btn btn-sm" onclick="clearLog()">Clear</button>
+                </div>
+                <div id="log"></div>
+            </div>
+        </div>
+
+        <div id="statsbar">
+            <span>CONNECTIONS: <span class="v" id="stat-conns">0</span></span>
+            <span>TAGS: <span class="v" id="stat-tags">0</span></span>
+            <span>ACTIVE ALARMS: <span class="v" id="stat-alarms" style="color:#fa0">0</span></span>
+            <span>UPTIME: <span class="v" id="stat-uptime">-</span></span>
+            <span style="margin-left:auto">Last Update: <span class="v" id="stat-ts">-</span></span>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div id="modal-overlay">
+        <div id="modal">
+            <h3 id="modal-title">Add</h3>
+            <div id="modal-body"></div>
+            <div id="modal-btns">
+                <button class="btn btn-red btn-sm" onclick="closeModal()">Cancel</button>
+                <button class="btn btn-green btn-sm" id="modal-confirm" onclick="confirmModal()">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ─── State ────────────────────────────────────────────────────────────────────
+        let ws = null;
+        let wsReconnectTimer = null;
+        let state = {
+            connections: [],
+            tags: [],
+            tagValues: {},
+            alarms: []
+        };
+        let modalCallback = null;
+        const trendData = {}; // tagId -> [last 20 values]
+        const serverBase = window.location.origin || 'http://localhost:3000';
+
+        // ─── WS ──────────────────────────────────────────────────────────────────────
+        function connectWS() {
+            const wsUrl = serverBase.replace('http', 'ws');
+            ws = new WebSocket(wsUrl);
+
+            ws.onopen = () => {
+                document.getElementById('ws-status').textContent = 'WS: CONNECTED';
+                document.getElementById('ws-status').className = 'ws-ok';
+                log('WS connected to ' + wsUrl, 'ok');
+            };
+
+            ws.onclose = () => {
+                document.getElementById('ws-status').textContent = 'WS: DISCONNECTED';
+                document.getElementById('ws-status').className = 'ws-err';
+                log('WS disconnected, retrying in 3s...', 'warn');
+                clearTimeout(wsReconnectTimer);
+                wsReconnectTimer = setTimeout(connectWS, 3000);
+            };
+
+            ws.onerror = () => {
+                log('WS error', 'err');
+            };
+
+            ws.onmessage = (evt) => {
+                const msg = JSON.parse(evt.data);
+                handleWSMessage(msg);
+            };
+        }
+
+        function handleWSMessage(msg) {
+            switch (msg.type) {
+                case 'init':
+                    state = {...state,
+                        ...msg.payload
+                    };
+                    renderAll();
+                    log('State synced from server', 'info');
+                    break;
+                case 'connection_status':
+                    updateConnectionStatus(msg.payload);
+                    break;
+                case 'tag_update':
+                    updateTagValue(msg.payload);
+                    break;
+                case 'alarm_change':
+                    handleAlarmChange(msg.payload);
+                    break;
+            }
+            document.getElementById('stat-ts').textContent = new Date().toLocaleTimeString();
+        }
+
+        // ─── API helpers ──────────────────────────────────────────────────────────────
+        async function api(method, path, body) {
+            const res = await fetch(serverBase + path, {
+                method,
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: body ? JSON.stringify(body) : undefined,
+            });
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({
+                    error: res.statusText
+                }));
+                throw new Error(err.error || res.statusText);
+            }
+            return res.json();
+        }
+
+        // ─── Render ───────────────────────────────────────────────────────────────────
+        function renderAll() {
+            renderConnections();
+            renderTags();
+            renderAlarms();
+            updateStats();
+        }
+
+        function renderConnections() {
+            const grid = document.getElementById('conn-grid');
+            grid.innerHTML = state.connections.map(c => `
+    <div class="conn-card">
+      <div class="conn-card-header">
+        <span class="conn-card-name">${escH(c.config.name || c.id)}</span>
+        <span class="badge ${c.status === 'connected' ? 'badge-green' : c.status === 'connecting' ? 'badge-yellow' : 'badge-red'}">${c.status.toUpperCase()}</span>
+      </div>
+      <div style="color:#888;font-size:11px">${escH(c.config.host)}:${c.config.port || 502} | Unit: ${c.config.unitId || 1}</div>
+      <div style="color:#888;font-size:11px">Poll: ${c.config.pollInterval || 'manual'}ms</div>
+      ${c.lastError ? `<div style="color:#f44;font-size:11px;margin-top:4px">ERR: ${escH(c.lastError)}</div>` : ''}
+      <div class="conn-card-stats">Reads: ${c.readCount || 0} | Errors: ${c.errorCount || 0} | ${c.connectedAt ? 'Since ' + new Date(c.connectedAt).toLocaleTimeString() : '-'}</div>
+      <div style="margin-top:8px;display:flex;gap:6px">
+        <button class="btn btn-yellow btn-sm" onclick="reconnectConn('${c.id}')">↻ Reconnect</button>
+        <button class="btn btn-red btn-sm" onclick="deleteConn('${c.id}')">✕ Delete</button>
+      </div>
+    </div>
+  `).join('') || '<div style="color:#555;padding:20px">No connections. Add a Modbus TCP connection above.</div>';
+
+  // Populate raw test connection selector
+  const rawConn = document.getElementById('raw-conn');
+  rawConn.innerHTML = state.connections
+    .filter(c => c.status === 'connected')
+    .map(c => `<option value="${c.id}">${escH(c.config.name || c.id)} (${c.config.host})</option>`)
+    .join('') || '<option value="">No connected devices</option>';
+}
+
+function renderTags() {
+  const tbody = document.getElementById('tag-tbody');
+  tbody.innerHTML = state.tags.map(tag => {
+    const tv = state.tagValues[tag.id];
+    const val = tv ? tv.value : null;
+    const quality = tv ? tv.quality : 'UNKNOWN';
+    const conn = state.connections.find(c => c.id === tag.connectionId);
+
+    // Trend sparkline
+    if (typeof val === 'number') {
+      if (!trendData[tag.id]) trendData[tag.id] = [];
+      trendData[tag.id].push(val);
+      if (trendData[tag.id].length > 20) trendData[tag.id].shift();
+    }
+
+    const fcNames = { 1:'Coil',2:'DI',3:'HR',4:'IR',5:'WCoil',6:'WReg',16:'WRegs' };
+    const displayVal = val === null ? '<span class="val-null">NULL</span>' :
+      typeof val === 'boolean' ? `<span style="color:${val?'#0f0':'#888'}">${val?'TRUE':'FALSE'}</span>` :
+      `<span class="val-display">${typeof val === 'number' ? val.toFixed(tag.decimals||2) : val}</span>`;
+
+    return `<tr>
+      <td><strong>${escH(tag.name)}</strong></td>
+      <td style="color:#888">${escH(conn ? (conn.config.name || conn.id) : tag.connectionId)}</td>
+      <td><span class="badge badge-gray">${fcNames[tag.functionCode]||'FC'+tag.functionCode}</span></td>
+      <td style="color:#48f">${tag.address}</td>
+      <td>${displayVal} ${typeof val === 'number' ? escH(tag.unit||'') : ''}</td>
+      <td><span class="badge ${quality==='GOOD'?'badge-green':'badge-red'}">${quality}</span></td>
+      <td style="color:#555">${tv ? new Date(tv.timestamp).toLocaleTimeString() : '-'}</td>
+      <td>
+        <button class="btn btn-yellow btn-sm" onclick="readSingleTag('${tag.id}')">↻</button>
+        ${tag.writable ? `<button class="btn btn-blue btn-sm" onclick="openWriteTag('${tag.id}')">✎</button>` : ''}
+        <button class="btn btn-red btn-sm" onclick="deleteTag('${tag.id}')">✕</button>
+      </td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="8" style="color:#555;text-align:center;padding:20px">No tags configured.</td></tr>';
+
+  document.getElementById('hdr-tags').textContent = state.tags.length;
+}
+
+function renderAlarms() {
+  const tbody = document.getElementById('alarm-tbody');
+  tbody.innerHTML = state.alarms.map(a => {
+    const tag = state.tags.find(t => t.id === a.tagId);
+    return `<tr class="${a.active ? 'alarm-active' : ''}">
+      <td><strong>${escH(a.name || a.id)}</strong></td>
+      <td>${tag ? escH(tag.name) : a.tagId}</td>
+      <td><span class="badge ${a.type.startsWith('H')?'badge-red':'badge-yellow'}">${a.type}</span></td>
+      <td>${a.limit}</td>
+      <td><span class="badge ${a.active ? 'badge-red' : 'badge-green'}">${a.active ? '⚠ ACTIVE' : 'NORMAL'}</span></td>
+      <td style="color:#555">${a.lastChange ? new Date(a.lastChange).toLocaleTimeString() : '-'}</td>
+      <td><button class="btn btn-red btn-sm" onclick="deleteAlarm('${a.id}')">✕</button></td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="7" style="color:#555;text-align:center;padding:20px">No alarms configured.</td></tr>';
+
+  const active = state.alarms.filter(a => a.active).length;
+  document.getElementById('hdr-alarms').textContent = active;
+  document.getElementById('stat-alarms').textContent = active;
+}
+
+function updateStats() {
+  document.getElementById('stat-conns').textContent = state.connections.length;
+  document.getElementById('stat-tags').textContent = state.tags.length;
+}
+
+// ─── State updates from WS ────────────────────────────────────────────────────
+function updateConnectionStatus(payload) {
+  const idx = state.connections.findIndex(c => c.id === payload.id);
+  if (idx >= 0) {
+    state.connections[idx] = { ...state.connections[idx], ...payload };
+  } else {
+    state.connections.push(payload);
+  }
+  renderConnections();
+  log(`Connection ${payload.id}: ${payload.status}${payload.error ? ' - ' + payload.error : ''}`,
+    payload.status === 'connected' ? 'ok' : payload.status === 'error' ? 'err' : 'info');
+}
+
+function updateTagValue(payload) {
+  state.tagValues[payload.tagId] = { value: payload.value, timestamp: payload.ts, quality: payload.quality };
+  renderTags();
+}
+
+function handleAlarmChange(payload) {
+  const idx = state.alarms.findIndex(a => a.id === payload.id);
+  if (idx >= 0) state.alarms[idx] = payload;
+  renderAlarms();
+  if (payload.active) {
+    log(`ALARM ACTIVE: ${payload.name || payload.id} (${payload.type} ${payload.limit})`, 'warn');
+  }
+}
+
+// ─── Actions ──────────────────────────────────────────────────────────────────
+async function reconnectConn(id) {
+  try {
+    log(`Reconnecting ${id}...`, 'info');
+    await api('POST', `/api/connections/${id}/reconnect`);
+    const conns = await api('GET', '/api/connections');
+    state.connections = conns;
+    renderConnections();
+    log(`Reconnect sent for ${id}`, 'ok');
+  } catch (err) {
+    log(`Reconnect failed: ${err.message}`, 'err');
+  }
+}
+
+async function deleteConn(id) {
+  if (!confirm('Delete this connection?')) return;
+  await api('DELETE', `/api/connections/${id}`);
+  state.connections = state.connections.filter(c => c.id !== id);
+  renderConnections();
+  log(`Deleted connection ${id}`, 'info');
+}
+
+async function readSingleTag(tagId) {
+  try {
+    const result = await api('GET', `/api/tags/${tagId}/read`);
+    state.tagValues[tagId] = result;
+    renderTags();
+    log(`Read tag ${tagId}: ${result.value} [${result.quality}]`, result.quality === 'GOOD' ? 'ok' : 'err');
+  } catch (err) {
+    log(`Read tag failed: ${err.message}`, 'err');
+  }
+}
+
+async function readAllTags() {
+  log('Reading all tags...', 'info');
+  for (const tag of state.tags) {
+    await readSingleTag(tag.id);
+  }
+}
+
+async function deleteTag(id) {
+  await api('DELETE', `/api/tags/${id}`);
+  state.tags = state.tags.filter(t => t.id !== id);
+  renderTags();
+  log(`Deleted tag ${id}`, 'info');
+}
+
+async function deleteAlarm(id) {
+  await api('DELETE', `/api/alarms/${id}`);
+  state.alarms = state.alarms.filter(a => a.id !== id);
+  renderAlarms();
+}
+
+// ─── Raw test ─────────────────────────────────────────────────────────────────
+document.getElementById('raw-fc').addEventListener('change', function() {
+  const fc = parseInt(this.value);
+  document.getElementById('raw-write-row').style.display = fc >= 5 ? 'flex' : 'none';
+});
+
+async function doRawRead() {
+  const connId = document.getElementById('raw-conn').value;
+  const fc = parseInt(document.getElementById('raw-fc').value);
+  const addr = parseInt(document.getElementById('raw-addr').value);
+  const count = parseInt(document.getElementById('raw-count').value);
+
+  if (!connId) { appendRaw('No connection selected', 'err'); return; }
+
+  appendRaw(`> FC${fc.toString().padStart(2,'0')} READ addr=${addr} count=${count}`, 'cmd');
+  try {
+    const result = await api('POST', `/api/connections/${connId}/raw-read`, { functionCode: fc, address: addr, count });
+    appendRaw(`< ${JSON.stringify(result.data)}`, 'ok');
+  } catch (err) {
+    appendRaw(`< ERROR: ${err.message}`, 'err');
+  }
+}
+
+async function doRawWrite() {
+  const connId = document.getElementById('raw-conn').value;
+  const fc = parseInt(document.getElementById('raw-fc').value);
+  const addr = parseInt(document.getElementById('raw-addr').value);
+  const rawVal = document.getElementById('raw-write-val').value;
+
+  if (!connId) { appendRaw('No connection selected', 'err'); return; }
+
+  let value;
+  try {
+    value = JSON.parse(rawVal);
+  } catch (_) {
+    value = rawVal === 'true' ? true : rawVal === 'false' ? false : Number(rawVal);
+  }
+
+  appendRaw(`> FC${fc.toString().padStart(2,'0')} WRITE addr=${addr} value=${JSON.stringify(value)}`, 'cmd');
+  try {
+    await api('POST', `/api/connections/${connId}/raw-write`, { functionCode: fc, address: addr, value });
+    appendRaw(`< OK`, 'ok');
+  } catch (err) {
+    appendRaw(`< ERROR: ${err.message}`, 'err');
+  }
+}
+
+function appendRaw(text, cls) {
+  const el = document.getElementById('raw-output');
+  const colors = { cmd:'#48f', ok:'#0f0', err:'#f44', info:'#888' };
+  el.innerHTML += `<div style="color:${colors[cls]||'#ccc'}">[${new Date().toLocaleTimeString()}] ${escH(text)}</div>`;
+  el.scrollTop = el.scrollHeight;
+}
+
+function clearRawOutput() {
+  document.getElementById('raw-output').innerHTML = '';
+}
+
+// ─── Modal forms ──────────────────────────────────────────────────────────────
+function openAddConn() {
+  document.getElementById('modal-title').textContent = 'Add Modbus TCP Connection';
+  document.getElementById('modal-body').innerHTML = `
+    <div class="form-row"><label>Name</label><input type="text" id="f-name" placeholder="PLC_01"></div>
+    <div class="form-row"><label>Host / IP</label><input type="text" id="f-host" placeholder="192.168.1.100"></div>
+    <div class="form-row"><label>Port</label><input type="number" id="f-port" value="502"></div>
+    <div class="form-row"><label>Unit ID</label><input type="number" id="f-unit" value="1" min="1" max="247"></div>
+    <div class="form-row"><label>Poll Interval (ms)</label><input type="number" id="f-poll" value="1000" min="100"></div>
+    <div class="form-row"><label>Timeout (ms)</label><input type="number" id="f-timeout" value="3000"></div>
+  `;
+  modalCallback = async () => {
+    const config = {
+      name: document.getElementById('f-name').value,
+      host: document.getElementById('f-host').value,
+      port: parseInt(document.getElementById('f-port').value) || 502,
+      unitId: parseInt(document.getElementById('f-unit').value) || 1,
+      pollInterval: parseInt(document.getElementById('f-poll').value) || 1000,
+      timeout: parseInt(document.getElementById('f-timeout').value) || 3000,
+    };
+    if (!config.host) throw new Error('Host is required');
+    const result = await api('POST', '/api/connections', config);
+    state.connections.push({ id: result.id, config, status: result.status, readCount: 0, errorCount: 0 });
+    renderConnections();
+    log(`Added connection ${result.id} → ${config.host}:${config.port}`, 'ok');
+  };
+  showModal();
+}
+
+function openAddTag() {
+  document.getElementById('modal-title').textContent = 'Add Tag';
+  document.getElementById('modal-body').innerHTML = `
+    <div class="form-row"><label>Tag Name</label><input type="text" id="f-name" placeholder="Tank_Level"></div>
+    <div class="form-row"><label>Connection</label>
+      <select id="f-conn">${state.connections.map(c=>`<option value="${c.id}">${escH(c.config.name||c.id)}</option>`).join('')}</select>
+    </div>
+    <div class="form-row"><label>Function Code</label>
+      <select id="f-fc">
+        <option value="1">FC01 - Read Coils</option>
+        <option value="2">FC02 - Read Discrete Inputs</option>
+        <option value="3" selected>FC03 - Read Holding Registers</option>
+        <option value="4">FC04 - Read Input Registers</option>
+      </select>
+    </div>
+    <div class="form-row"><label>Address</label><input type="number" id="f-addr" value="0" min="0" max="65535"></div>
+    <div class="form-row"><label>Register Count</label><input type="number" id="f-regcount" value="1" min="1" max="125"></div>
+    <div class="form-row"><label>Unit</label><input type="text" id="f-unit" placeholder="°C, bar, %..."></div>
+    <div class="form-row"><label>Decimals</label><input type="number" id="f-dec" value="2" min="0" max="6"></div>
+    <div class="form-row"><label>Writable</label><input type="checkbox" id="f-writable"></div>
+    <div style="color:#555;font-size:11px;margin-top:8px">Scaling (optional)</div>
+    <div class="form-row">
+      <label>Raw Min</label><input type="number" id="f-rawmin" placeholder="0" style="width:70px">
+      <label style="min-width:60px">Raw Max</label><input type="number" id="f-rawmax" placeholder="65535" style="width:70px">
+    </div>
+    <div class="form-row">
+      <label>Eng Min</label><input type="number" id="f-engmin" placeholder="0" style="width:70px">
+      <label style="min-width:60px">Eng Max</label><input type="number" id="f-engmax" placeholder="100" style="width:70px">
+    </div>
+  `;
+  modalCallback = async () => {
+    const rawMin = document.getElementById('f-rawmin').value;
+    const scaling = rawMin !== '' ? {
+      rawMin: parseFloat(rawMin), rawMax: parseFloat(document.getElementById('f-rawmax').value),
+      engMin: parseFloat(document.getElementById('f-engmin').value), engMax: parseFloat(document.getElementById('f-engmax').value),
+    } : null;
+
+    const tag = {
+      name: document.getElementById('f-name').value,
+      connectionId: document.getElementById('f-conn').value,
+      functionCode: parseInt(document.getElementById('f-fc').value),
+      address: parseInt(document.getElementById('f-addr').value),
+      registerCount: parseInt(document.getElementById('f-regcount').value) || 1,
+      unit: document.getElementById('f-unit').value,
+      decimals: parseInt(document.getElementById('f-dec').value) || 2,
+      writable: document.getElementById('f-writable').checked,
+      scaling,
+    };
+    if (!tag.name) throw new Error('Tag name required');
+    if (!tag.connectionId) throw new Error('Connection required');
+    const result = await api('POST', '/api/tags', tag);
+    state.tags.push(result);
+    renderTags();
+    log(`Added tag: ${tag.name} @ addr=${tag.address}`, 'ok');
+  };
+  showModal();
+}
+
+function openWriteTag(tagId) {
+  const tag = state.tags.find(t => t.id === tagId);
+  const tv = state.tagValues[tagId];
+  document.getElementById('modal-title').textContent = `Write Tag: ${tag.name}`;
+  document.getElementById('modal-body').innerHTML = `
+    <div class="form-row"><label>Current Value</label><span style="color:#0f0">${tv ? tv.value : 'N/A'} ${tag.unit||''}</span></div>
+    <div class="form-row"><label>Write Value</label><input type="text" id="f-wval" value="${tv ? tv.value : '0'}"></div>
+  `;
+  modalCallback = async () => {
+    const raw = document.getElementById('f-wval').value;
+    const value = raw === 'true' ? true : raw === 'false' ? false : Number(raw);
+    await api('POST', `/api/tags/${tagId}/write`, { value });
+    state.tagValues[tagId] = { value, timestamp: Date.now(), quality: 'GOOD' };
+    renderTags();
+    log(`Wrote ${tag.name} = ${value}`, 'ok');
+  };
+  showModal();
+}
+
+function openAddAlarm() {
+  document.getElementById('modal-title').textContent = 'Add Alarm';
+  document.getElementById('modal-body').innerHTML = `
+    <div class="form-row"><label>Name</label><input type="text" id="f-name" placeholder="Tank HH Level"></div>
+    <div class="form-row"><label>Tag</label>
+      <select id="f-tag">${state.tags.map(t=>`<option value="${t.id}">${escH(t.name)}</option>`).join('')}</select>
+    </div>
+    <div class="form-row"><label>Type</label>
+      <select id="f-type">
+        <option value="HH">HH - High-High</option>
+        <option value="HI">HI - High</option>
+        <option value="LO">LO - Low</option>
+        <option value="LL">LL - Low-Low</option>
+        <option value="EQ">EQ - Equal</option>
+      </select>
+    </div>
+    <div class="form-row"><label>Limit</label><input type="number" id="f-limit" placeholder="90"></div>
+  `;
+  modalCallback = async () => {
+    const alarm = {
+      name: document.getElementById('f-name').value,
+      tagId: document.getElementById('f-tag').value,
+      type: document.getElementById('f-type').value,
+      limit: parseFloat(document.getElementById('f-limit').value),
+    };
+    const result = await api('POST', '/api/alarms', alarm);
+    state.alarms.push(result);
+    renderAlarms();
+    log(`Added alarm: ${alarm.name}`, 'ok');
+  };
+  showModal();
+}
+
+function showModal() {
+  document.getElementById('modal-overlay').classList.add('show');
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('show');
+  modalCallback = null;
+}
+
+async function confirmModal() {
+  if (!modalCallback) return closeModal();
+  try {
+    await modalCallback();
+    closeModal();
+  } catch (err) {
+    log('Error: ' + err.message, 'err');
+    alert('Error: ' + err.message);
+  }
+}
+
+document.getElementById('modal-overlay').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+// ─── Tabs ─────────────────────────────────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t, i) => {
+    const names = ['connections','tags','alarms','rawtest','log'];
+    t.classList.toggle('active', names[i] === name);
+  });
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+}
+
+// ─── Log ─────────────────────────────────────────────────────────────────────
+function log(msg, type = 'info') {
+  const el = document.getElementById('log');
+  const colors = { info:'log-info', ok:'log-ok', err:'log-err', warn:'log-warn' };
+  el.innerHTML += `<div class="${colors[type]||'log-info'}">[${new Date().toLocaleTimeString()}] ${escH(msg)}</div>`;
+  el.scrollTop = el.scrollHeight;
+  if (el.children.length > 500) el.removeChild(el.firstChild);
+}
+
+function clearLog() {
+  document.getElementById('log').innerHTML = '';
+}
+
+// ─── Stats polling ────────────────────────────────────────────────────────────
+async function pollStats() {
+  try {
+    const s = await api('GET', '/api/status');
+    document.getElementById('stat-uptime').textContent = Math.floor(s.uptime) + 's';
+    document.getElementById('stat-ts').textContent = new Date().toLocaleTimeString();
+  } catch (_) {}
+}
+
+// ─── Utils ────────────────────────────────────────────────────────────────────
+function escH(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+connectWS();
+setInterval(pollStats, 5000);
+
+// Initial load
+api('GET', '/api/connections').then(conns => { state.connections = conns; renderConnections(); }).catch(() => {});
+api('GET', '/api/tags').then(tags => { state.tags = tags; renderTags(); }).catch(() => {});
+api('GET', '/api/alarms').then(alarms => { state.alarms = alarms; renderAlarms(); }).catch(() => {});
+    </script>
+</body>
+
+</html>
